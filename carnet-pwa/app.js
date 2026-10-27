@@ -84,13 +84,14 @@
   function renderItems() {
     const ul = $("items");
     ul.replaceChildren(...current.map((it, i) => {
-      const li = el("li", { className: "item " + it.cat }, el("span", { className: "nm", textContent: it.name }));
+      const txt = el("span", { className: "txt" }, el("span", { className: "nm", textContent: it.name }));
+      const li = el("li", { className: "item " + it.cat }, el("span", { className: "tag " + it.cat, textContent: it.cat === "boisson" ? "Boisson" : "Plat" }), txt);
       if (it.cat === "boisson") {
         const sel = el("select");
         sel.setAttribute("aria-label", "Quantité de " + it.name);
-        window.TAILLES.forEach(t => sel.append(el("option", { value: t, textContent: "· " + t.toLowerCase(), selected: t === it.size })));
+        window.TAILLES.forEach(t => sel.append(el("option", { value: t, textContent: t, selected: t === it.size })));
         sel.onchange = () => { it.size = sel.value; renderMemo(); };
-        li.append(sel);
+        txt.append(sel);
       }
       const rm = el("button", { type: "button", className: "rm", textContent: "×" });
       rm.setAttribute("aria-label", "Retirer " + it.name);
@@ -176,11 +177,11 @@
   function memoRow(e) {
     const row = el("div", { className: "tl-row" + (e.photoId ? " has-photo" : "") });
     if (e.photoId) row.append(thumb(e.photoId));
-    const gly = e.gly != null ? "Glycémie " + fmtGly(e.gly) + " " + UNIT[data.settings.unit] : "Glycémie non notée";
+    const gly = e.gly != null ? "glycémie " + fmtGly(e.gly) + " " + UNIT[data.settings.unit] : "glycémie non notée";
     row.append(
       el("div", { style: "display:grid;min-width:0" },
-        el("span", { className: "d num", textContent: fmtWhen(e.at) }),
-        el("span", { className: "s num", textContent: gly + " · " + e.items.map(itemLabel).join(" + ") + (e.note ? " — " + e.note : "") })),
+        el("span", { className: "d num", textContent: fmtWhen(e.at) + " · " + gly }),
+        el("span", { className: "s", textContent: e.items.map(itemLabel).join(" + ") + (e.note ? " — " + e.note : "") })),
       el("span", { className: "u num", textContent: fmtUnits(e.units) + " U" }));
     return row;
   }
@@ -301,11 +302,12 @@
   // le bouton du bas rappelle la dose saisie : « Enregistrer · 3 unités »
   function syncSave() {
     const u = parseNum($("f-units").value);
-    $("btn-save").textContent = u == null ? "Enregistrer" : "Enregistrer · " + fmtUnits(Math.round(u * 2) / 2) + (u > 1 ? " unités" : " unité");
+    $("btn-save").textContent = u == null ? "Enregistrer" : "Enregistrer · " + fmtUnits(Math.round(u * 10) / 10) + (u > 1 ? " unités" : " unité");
   }
   function renderDate() {
     const d = new Date($("f-when").value || Date.now());
-    $("date-chip").textContent = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    $("date-chip").textContent = day.charAt(0).toUpperCase() + day.slice(1) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   }
   $("f-units").addEventListener("input", syncSave);
   $("f-when").addEventListener("change", renderDate);
@@ -325,9 +327,19 @@
   $("f-search").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addTyped(); } });
   $("btn-add").onclick = () => { addTyped(); syncAdd(); };
   syncAdd();
-  const step = (d) => { const v = parseNum($("f-units").value) || 0; $("f-units").value = fmtUnits(Math.max(0, Math.round((v + d) * 2) / 2)); syncSave(); };
-  $("u-minus").onclick = () => step(-0.5);
-  $("u-plus").onclick = () => step(0.5);
+  // − / + par pas de 0,1 unité ; en gardant le doigt appuyé, la valeur défile de plus en plus vite.
+  const step = (d) => { const v = parseNum($("f-units").value) || 0; $("f-units").value = fmtUnits(Math.max(0, Math.round((v + d) * 10) / 10)); syncSave(); };
+  function holdToRepeat(btn, d) {
+    let timer = null;
+    const stop = () => { clearTimeout(timer); timer = null; };
+    const tick = (delay) => { step(d); timer = setTimeout(() => tick(Math.max(40, delay * 0.8)), delay); };
+    btn.addEventListener("pointerdown", (ev) => { ev.preventDefault(); stop(); tick(450); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => btn.addEventListener(t, stop));
+    btn.addEventListener("contextmenu", (ev) => ev.preventDefault());
+    btn.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); step(d); } });
+  }
+  holdToRepeat($("u-minus"), -0.1);
+  holdToRepeat($("u-plus"), 0.1);
 
   $("btn-save").onclick = async () => {
     if (!current.length) { toast("Ajoutez au moins un plat ou une boisson."); $("f-search").focus(); return; }
@@ -336,7 +348,7 @@
     const glyStr = $("f-gly").value.trim();
     const gly = glyToMg(glyStr);
     if (glyStr && gly == null) { toast("La glycémie n'est pas un nombre valide."); $("f-gly").focus(); return; }
-    const e = { id: newId(), at: $("f-when").value || nowLocal(), gly, items: current.map(i => ({ ...i })), units: Math.round(units * 2) / 2, note: $("f-note").value.trim() };
+    const e = { id: newId(), at: $("f-when").value || nowLocal(), gly, items: current.map(i => ({ ...i })), units: Math.round(units * 10) / 10, note: $("f-note").value.trim() };
     if (photo) {
       try { await PhotoIA.save(photo.id, photo.blob, photo.emb); photo.saved = true; e.photoId = photo.id; }
       catch { toast("La photo n'a pas pu être gardée (stockage plein ?). Le repas est enregistré sans photo."); }
@@ -463,8 +475,6 @@
   function show(view) {
     ["repas", "journal", "reglages"].forEach(v => ($("view-" + v).hidden = v !== view));
     document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.view === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
-    $("btn-save").hidden = view !== "repas";
-    document.documentElement.style.setProperty("--bottom-h", view === "repas" ? "132px" : "70px");
     if (view === "journal") renderJournal();
     if (view === "reglages") renderStorage();
     window.scrollTo(0, 0);

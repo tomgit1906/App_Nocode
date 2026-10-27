@@ -4,284 +4,298 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mémo insuline</title>
-<meta name="theme-color" content="#14213D">
+<meta name="theme-color" content="#EEF4F0">
 <meta name="description" content="Mémo personnel : ce que j'ai mangé et bu, ma glycémie avant le repas et les unités d'insuline injectées.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
 <style>
-/* Ambiance « Vif » : photo du plat en grand en haut, feuille blanche arrondie par-dessus,
-   tuiles glycémie / insuline côte à côte, bouton Enregistrer toujours visible en bas. */
+/* Ambiance « Douceur » : fond vert très pâle, grandes cartes blanches arrondies,
+   texte large, bouton Enregistrer dans la carte Insuline, navigation en pilule en bas. */
 :root {
-  --bg: #FFFFFF;
-  --soft: #F4F6FA;
-  --ink: #14213D;
-  --muted: #5C6782;
-  --line: #E3E7EF;
-  --accent: #E2553A;
+  --bg: #EEF4F0;
+  --card: #FFFFFF;
+  --soft: #EEF4F0;
+  --ink: #1F2E2A;
+  --muted: #56675F;
+  --line: #D5E3DB;
+  --dash: #C9DCD1;
+  --accent: #2F7D62;
   --accent-ink: #FFFFFF;
-  --drink-bg: #E4F1FB;
-  --drink-btn: #C9E2F5;
-  --hero: #F3E6D8;
-  --plat-bg: #14213D;
-  --plat-fg: #FFFFFF;
-  --plat-btn: #2C3A5A;
+  --plat-tag: #DCEEE6;
+  --drink-fg: #2E5F93;
+  --drink-tag: #DDE8F4;
+  --memo-bg: #FFF4DA;
+  --memo-ink: #6B5A33;
+  --memo-icon: #9A6A00;
+  --ph: #E3D5C3;
+  --nav-bg: #1F2E2A;
+  --nav-fg: #C7D6CE;
+  --nav-on-bg: #FFFFFF;
+  --nav-on-fg: #1F2E2A;
   --danger: #B42318;
-  --f: "Plus Jakarta Sans", system-ui, "Roboto", "Segoe UI", sans-serif;
-  --bottom-h: 132px;
+  --f: "Nunito", system-ui, "Roboto", "Segoe UI", sans-serif;
+  --bottom-h: 76px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg: #0E1626; --soft: #172238; --ink: #EEF2F8; --muted: #A3AEC4; --line: #2A3650;
-  --accent: #FF7A5C; --accent-ink: #1A0E0A;
-  --drink-bg: #1C3550; --drink-btn: #28496B; --hero: #2A2420;
-  --plat-bg: #EEF2F8; --plat-fg: #14213D; --plat-btn: #C9D2E3; --danger: #FF8A80;
+  --bg: #101A17; --card: #18241F; --soft: #22312B; --ink: #E6EFEA; --muted: #A3B5AB; --line: #2E4038; --dash: #3A5046;
+  --accent: #5DBB94; --accent-ink: #0B1A14; --plat-tag: #1E3A2F; --drink-fg: #9CC3EE; --drink-tag: #1F2E40;
+  --memo-bg: #2D2716; --memo-ink: #E5D3A6; --memo-icon: #E3B54B; --ph: #3A322A;
+  --nav-bg: #E6EFEA; --nav-fg: #3E5048; --nav-on-bg: #101A17; --nav-on-fg: #E6EFEA; --danger: #FF8A80;
   color-scheme: dark; } }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 16px; line-height: 1.45; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 17px; line-height: 1.45; }
 .num { font-variant-numeric: tabular-nums; }
-h1, h2, h3 { margin: 0; line-height: 1.1; text-wrap: balance; }
+h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.gutter { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .wrap { max-width: 560px; margin: 0 auto; }
-
-/* ---------- photo en haut ---------- */
-.hero { position: relative; height: 300px; background: var(--hero); overflow: hidden; }
-.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; cursor: pointer; text-align: center; padding: 60px 24px 50px; }
-.hero-empty .cam { width: 84px; height: 84px; border-radius: 42px; background: var(--ink); color: var(--bg); display: grid; place-items: center; }
-.hero-empty .cam svg { width: 38px; height: 38px; }
-.hero-empty strong { font-size: 20px; font-weight: 800; color: #14213D; }
-.hero-empty span { font-size: 14px; color: #4A3B2C; }
-.hero-top { position: absolute; left: 0; right: 0; top: 0; padding-top: calc(16px + env(safe-area-inset-top, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.date-chip { background: #FFFFFF; color: #14213D; border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 700; }
-.hero-btn { background: #14213D; color: #FFFFFF; border: 0; border-radius: 999px; padding: 10px 16px; font-size: 14px; font-weight: 700; display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
-.hero-btn svg { width: 18px; height: 18px; }
-
-/* ---------- feuille ---------- */
-.sheet { margin-top: -36px; position: relative; background: var(--bg); border-radius: 32px 32px 0 0; padding-top: 24px; padding-bottom: calc(var(--bottom-h) + 32px + env(safe-area-inset-bottom, 0px)); }
-.sheet .wrap { display: grid; gap: 26px; }
-.page { padding-top: calc(28px + env(safe-area-inset-top, 0px)); padding-bottom: calc(var(--bottom-h) + 32px + env(safe-area-inset-bottom, 0px)); }
-.page .wrap { display: grid; gap: 18px; }
-.page h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
-section { display: grid; gap: 12px; min-width: 0; }
-.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.row-head h2 { font-size: 18px; font-weight: 800; }
-.link { border: 0; background: none; padding: 6px 0; color: var(--accent); font-weight: 700; font-size: 15px; }
-.link-muted { border: 0; background: none; padding: 4px 0; color: var(--muted); font-size: 14px; text-decoration: underline; justify-self: start; }
+.page { padding-top: calc(24px + env(safe-area-inset-top, 0px)); padding-bottom: calc(var(--bottom-h) + 40px + env(safe-area-inset-bottom, 0px)); }
+.page .wrap { display: grid; gap: 14px; }
+.page h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; padding: 0 4px; }
+section { min-width: 0; }
+.card { background: var(--card); border-radius: 28px; padding: 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.card h2 { font-size: 18px; font-weight: 800; }
+.eyebrow { font-size: 14px; font-weight: 800; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.row-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.link { border: 0; background: none; padding: 6px 0; color: var(--accent); font-weight: 800; font-size: 16px; }
 .note-txt { font-size: 14px; color: var(--muted); margin: 0; }
 
-/* ---------- IA ---------- */
-.ia h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+/* ---------- en-tête ---------- */
+.hello { display: grid; gap: 2px; padding: 4px 4px 6px; }
+.hello .date { font-size: 15px; font-weight: 600; color: var(--muted); }
+
+/* ---------- photo ---------- */
+.photo-card { padding: 14px; }
+.ph-empty { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.cam { width: 84px; height: 84px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
+.cam svg { width: 38px; height: 38px; }
+.ph-empty strong { display: block; font-size: 18px; font-weight: 900; }
+.ph-empty small { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.ia { display: grid; gap: 14px; }
+.ph-row { display: flex; gap: 14px; align-items: center; }
+.ph-row img { width: 112px; height: 112px; border-radius: 22px; object-fit: cover; background: var(--ph); flex: none; display: block; }
+.ph-side { display: grid; gap: 6px; min-width: 0; }
+.ph-side .reassure { font-size: 14px; color: var(--muted); line-height: 1.35; margin: 0; }
+.ph-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill-btn { border: 0; border-radius: 999px; padding: 9px 14px; background: var(--soft); color: var(--ink); font-size: 14px; font-weight: 800; cursor: pointer; }
+.pill-btn.ghost { background: transparent; color: var(--muted); }
+.ia-q { font-size: 26px; font-weight: 900; letter-spacing: -0.02em; overflow-wrap: anywhere; padding: 0 4px; }
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.btn-accent { border: 0; border-radius: 16px; padding: 15px; background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 800; }
-.btn-outline { border: 2px solid var(--line); border-radius: 16px; padding: 13px; background: var(--bg); color: var(--ink); font-size: 16px; font-weight: 700; }
-.ia-alts { margin: 0; font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
-.ia-alts button { border: 0; background: var(--soft); border-radius: 999px; padding: 6px 12px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.btn-accent { border: 0; border-radius: 999px; padding: 15px; background: var(--accent); color: var(--accent-ink); font-size: 17px; font-weight: 900; }
+.btn-outline { border: 2px solid var(--line); border-radius: 999px; padding: 13px; background: var(--card); color: var(--ink); font-size: 17px; font-weight: 800; }
+.ia-alts { margin: 0; font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-weight: 600; }
+.ia-alts button { border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 13px; font-size: 15px; font-weight: 700; color: var(--ink); }
 .ia-status { margin: 0; font-size: 15px; color: var(--muted); }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); display: inline-block; vertical-align: -3px; margin-right: 8px; }
 @media (prefers-reduced-motion: no-preference) { .spinner { animation: spin 0.9s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } }
 
-/* ---------- mon repas ---------- */
-.items { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.item { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 6px 6px 16px; font-size: 16px; font-weight: 700; max-width: 100%; }
-.item.plat { background: var(--plat-bg); color: var(--plat-fg); }
-.item.boisson { background: var(--drink-bg); color: var(--ink); }
-.item .nm { overflow-wrap: anywhere; }
-.item select { border: 0; background: transparent; font-size: 15px; font-weight: 600; color: inherit; padding: 4px 0; max-width: 150px; }
-.item .rm { border: 0; width: 32px; height: 32px; border-radius: 16px; font-size: 18px; line-height: 1; flex: none; }
-.item.plat .rm { background: var(--plat-btn); color: var(--plat-fg); }
-.item.boisson .rm { background: var(--drink-btn); color: var(--ink); }
+/* ---------- glycémie ---------- */
+.gly-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: text; }
+.gly-card strong { display: block; font-size: 18px; font-weight: 800; }
+.gly-card small { display: block; font-size: 14px; color: var(--muted); }
+.gly-box { display: flex; align-items: baseline; gap: 6px; background: var(--soft); border-radius: 18px; padding: 8px 16px; flex: none; }
+.gly-box input { width: 92px; border: 0; background: transparent; font-size: 34px; font-weight: 900; text-align: right; padding: 0; color: var(--ink); }
+.gly-box input:focus { outline: none; }
+.gly-box input::placeholder { color: var(--muted); opacity: 0.6; }
+.gly-box span { font-size: 16px; font-weight: 700; color: var(--muted); }
+.gly-card:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- mon assiette ---------- */
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.item { display: flex; align-items: center; gap: 12px; background: var(--soft); border-radius: 18px; padding: 8px 6px 8px 14px; min-width: 0; }
+.item .txt { flex: 1; display: grid; min-width: 0; }
+.item .nm { font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
+.card .item select { border: 0; background: transparent; font-size: 14px; color: var(--muted); padding: 2px 0; justify-self: start; max-width: 100%; }
+.item .rm { border: 0; width: 44px; height: 44px; border-radius: 22px; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; flex: none; }
+.tag { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 999px; padding: 3px 9px; white-space: nowrap; background: var(--soft); color: var(--muted); flex: none; }
+.tag.plat { background: var(--plat-tag); color: var(--accent); }
+.tag.boisson { background: var(--drink-tag); color: var(--drink-fg); }
 .empty-list { margin: 0; color: var(--muted); font-size: 15px; }
 
-.search-row { display: flex; gap: 8px; }
-.search-row input { flex: 1; min-width: 0; border: 2px solid var(--line); background: var(--bg); border-radius: 16px; padding: 12px 14px; font-size: 16px; }
-.search-row input:focus { border-color: var(--ink); outline: none; }
-.btn-add { border: 0; border-radius: 16px; padding: 0 18px; background: var(--ink); color: var(--bg); font-weight: 800; }
+.add-box { display: flex; align-items: center; gap: 8px; border: 2px dashed var(--dash); border-radius: 18px; padding: 6px 6px 6px 14px; color: var(--muted); }
+.add-box > svg { width: 20px; height: 20px; flex: none; }
+.add-box input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 16px; font-weight: 600; padding: 8px 0; color: var(--ink); }
+.add-box input:focus { outline: none; }
+.add-box:focus-within { border-style: solid; border-color: var(--accent); }
+.btn-add { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: var(--accent-ink); font-weight: 900; font-size: 15px; }
 .btn-add:disabled { opacity: 0.35; cursor: default; }
-.results { display: grid; border: 2px solid var(--line); border-radius: 16px; overflow: hidden; }
-.results > button { border: 0; border-bottom: 1px solid var(--line); background: var(--bg); text-align: left; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 13px 14px; font-size: 16px; }
+.results { display: grid; border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
+.results > button { border: 0; border-bottom: 1px solid var(--line); background: var(--card); text-align: left; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 13px 14px; font-size: 16px; font-weight: 600; }
 .results > button:last-child { border-bottom: 0; }
-.add-new { display: grid; gap: 8px; padding: 14px; background: var(--soft); border-bottom: 1px solid var(--line); font-weight: 600; }
-.add-new .two button { border: 2px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px; font-weight: 700; }
-.tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 9px; white-space: nowrap; background: var(--soft); color: var(--muted); }
-.quick-label { font-size: 14px; font-weight: 700; color: var(--muted); }
+.add-new { display: grid; gap: 8px; padding: 14px; background: var(--soft); border-bottom: 1px solid var(--line); font-weight: 700; }
+.add-new .two button { border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 10px; font-weight: 800; }
+.quick-label, .browse-cat { font-size: 14px; font-weight: 700; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 13px; font-size: 15px; font-weight: 600; }
-.chip.boisson { background: var(--drink-bg); border-color: var(--drink-bg); }
+.chip { border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 14px; font-size: 15px; font-weight: 700; }
+.chip.boisson { background: var(--drink-tag); border-color: var(--drink-tag); }
 
-/* ---------- tuiles ---------- */
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.tile { border-radius: 22px; padding: 16px; display: grid; gap: 6px; align-content: start; }
-.tile.gly { background: var(--soft); }
-.tile.ins { background: var(--accent); color: var(--accent-ink); }
-.tile .lbl { font-size: 14px; font-weight: 700; }
-.tile.gly .lbl { color: var(--muted); }
-.gly-in { display: flex; align-items: baseline; gap: 4px; }
-.gly-in input { width: 100%; min-width: 0; border: 0; background: transparent; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0; color: var(--ink); }
-.gly-in input::placeholder { color: var(--muted); opacity: 0.6; }
-.gly-in span { font-size: 15px; font-weight: 600; color: var(--muted); }
-.dose { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; }
-.dose button { width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--bg); color: var(--accent); font-size: 24px; font-weight: 800; }
-.dose input { width: 100%; min-width: 0; border: 0; background: transparent; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0; color: var(--accent-ink); }
-.dose input::placeholder { color: var(--accent-ink); opacity: 0.6; }
-@media (max-width: 360px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+/* ---------- les fois précédentes ---------- */
+.memo { background: var(--memo-bg); }
+.memo h2 { display: flex; align-items: center; gap: 8px; }
+.memo h2 svg { width: 20px; height: 20px; flex: none; }
+.memo .note-txt { color: var(--memo-ink); font-size: 13px; }
+.timeline { display: grid; gap: 8px; }
+.tl-group { font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--memo-ink); padding-top: 4px; }
+.tl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--card); border-radius: 20px; padding: 12px 14px; }
+.tl-row.has-photo { grid-template-columns: 52px minmax(0, 1fr) auto; }
+.tl-row .d { font-size: 14px; font-weight: 700; color: var(--memo-ink); }
+.tl-row .s { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.tl-row .u { font-size: 26px; font-weight: 900; white-space: nowrap; }
+.thumb { width: 52px; height: 52px; border: 0; padding: 0; border-radius: 14px; overflow: hidden; background: var(--soft); cursor: zoom-in; flex: none; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.more { display: grid; gap: 10px; }
-.more .when-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; color: var(--muted); }
-.more input, .more textarea { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 13px; font-size: 16px; }
+/* ---------- heure et note ---------- */
+.when-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
+.more input, .more textarea { border: 2px solid var(--line); background: var(--card); border-radius: 16px; padding: 11px 13px; font-size: 16px; }
 .more input { flex: 1 1 180px; }
 .more textarea { width: 100%; resize: vertical; min-height: 54px; }
 
-/* ---------- fois précédentes ---------- */
-.timeline { display: grid; border-left: 3px solid var(--line); margin-left: 6px; padding-left: 16px; }
-.tl-group { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 8px 0 2px; }
-.tl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 0; }
-.tl-row.has-photo { grid-template-columns: 52px minmax(0, 1fr) auto; }
-.tl-row .d { font-size: 16px; font-weight: 700; }
-.tl-row .s { font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
-.tl-row .u { font-size: 22px; font-weight: 800; white-space: nowrap; }
-.thumb { width: 52px; height: 52px; border: 0; padding: 0; border-radius: 12px; overflow: hidden; background: var(--soft); cursor: zoom-in; flex: none; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* ---------- insuline ---------- */
+.dose { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; align-items: center; gap: 8px; }
+.dose button { width: 64px; height: 64px; border: 0; border-radius: 32px; background: var(--soft); color: var(--accent); font-size: 32px; font-weight: 800; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.dose button:active { background: var(--plat-tag); }
+.dose-val { display: flex; align-items: baseline; justify-content: center; gap: 6px; min-width: 0; }
+.dose-val input { width: 100%; max-width: 130px; min-width: 0; border: 0; background: transparent; text-align: right; font-size: 52px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; padding: 0; color: var(--ink); }
+.dose-val input:focus { outline: none; }
+.dose-val input::placeholder { color: var(--muted); opacity: 0.5; }
+.dose-val span { font-size: 17px; font-weight: 700; color: var(--muted); }
+.dose-hint { margin: -4px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.btn-save { border: 0; border-radius: 999px; padding: 18px; background: var(--accent); color: var(--accent-ink); font-size: 18px; font-weight: 900; width: 100%; }
 
-/* ---------- barre du bas ---------- */
-.bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--bg); border-top: 1px solid var(--line);
-  padding-top: 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
-.bottom .wrap { display: grid; gap: 8px; }
-.btn-save { border: 0; border-radius: 16px; padding: 17px; background: var(--ink); color: var(--bg); font-size: 17px; font-weight: 800; width: 100%; }
-nav.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-nav.tabs button { border: 0; background: none; padding: 8px 4px; font-size: 14px; font-weight: 600; color: var(--muted); display: grid; justify-items: center; gap: 2px; }
-nav.tabs button svg { width: 22px; height: 22px; }
-nav.tabs button[aria-current="page"] { color: var(--accent); font-weight: 800; }
+/* ---------- navigation ---------- */
+.bottom { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 10; pointer-events: none; }
+nav.tabs { pointer-events: auto; background: var(--nav-bg); border-radius: 999px; padding: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+nav.tabs button { border: 0; background: none; border-radius: 999px; padding: 12px 6px; font-size: 16px; font-weight: 700; color: var(--nav-fg); }
+nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(--nav-on-fg); font-weight: 900; }
 
 /* ---------- journal ---------- */
-.search-big { border: 2px solid var(--line); background: var(--bg); border-radius: 16px; padding: 12px 14px; font-size: 16px; width: 100%; }
-.day-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
-.entry { background: var(--soft); border-radius: 22px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; }
+.search-big { border: 2px solid var(--line); background: var(--card); border-radius: 18px; padding: 13px 16px; font-size: 16px; width: 100%; }
+.day-label { font-size: 14px; font-weight: 800; color: var(--muted); margin-top: 8px; padding: 0 4px; }
+.entry { background: var(--card); border-radius: 28px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; }
 .entry .top { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
 .entry .t { font-size: 14px; font-weight: 700; color: var(--muted); }
 .entry .its { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.pill { font-size: 14px; font-weight: 700; border-radius: 999px; padding: 4px 11px; }
-.pill.plat { background: var(--plat-bg); color: var(--plat-fg); }
-.pill.boisson { background: var(--drink-bg); color: var(--ink); }
+.pill { font-size: 15px; font-weight: 800; border-radius: 999px; padding: 4px 11px; }
+.pill.plat { background: var(--plat-tag); color: var(--accent); }
+.pill.boisson { background: var(--drink-tag); color: var(--drink-fg); }
 .entry .meta { font-size: 14px; color: var(--muted); margin-top: 6px; }
 .entry .note { font-size: 14px; color: var(--muted); font-style: italic; margin-top: 4px; overflow-wrap: anywhere; }
-.entry .u { font-size: 28px; font-weight: 800; text-align: right; line-height: 1; }
-.entry .u small { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+.entry .u { font-size: 32px; font-weight: 900; text-align: right; line-height: 1; }
+.entry .u small { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 2px; }
 .entry .acts { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 14px; }
-.entry .acts button { border: 2px solid var(--line); background: var(--bg); border-radius: 12px; padding: 7px 12px; font-size: 14px; font-weight: 700; }
+.entry .acts button { border: 0; background: var(--soft); border-radius: 999px; padding: 9px 14px; font-size: 14px; font-weight: 800; }
 .entry .acts .btn-danger { color: var(--danger); }
 .empty { text-align: center; color: var(--muted); padding: 40px 8px; margin: 0; }
 
 /* ---------- réglages ---------- */
-.card { background: var(--soft); border-radius: 22px; padding: 18px; display: grid; gap: 12px; }
-.card h2 { font-size: 18px; font-weight: 800; }
-.card select { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 13px; font-size: 16px; }
-.card label { font-weight: 700; }
+.card select { border: 2px solid var(--line); background: var(--card); border-radius: 16px; padding: 11px 13px; font-size: 16px; }
+.card label { font-weight: 800; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.btn-row button, #wipe-zone button { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 14px; font-weight: 700; }
+.btn-row button, #wipe-zone button { border: 0; background: var(--soft); border-radius: 999px; padding: 11px 16px; font-weight: 800; }
 .btn-danger { color: var(--danger); }
 .notice { font-size: 14px; color: var(--muted); margin: 0; }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--bottom-h) + 16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
-  background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 14px; font-size: 15px; font-weight: 600; max-width: calc(100vw - 32px); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--bottom-h) + 24px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 16px; font-size: 15px; font-weight: 700; max-width: calc(100vw - 32px); }
 #viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 92vh; }
 #viewer::backdrop { background: rgba(0, 0, 0, 0.85); }
-#viewer img { max-width: 96vw; max-height: 82vh; display: block; border-radius: 14px; }
-#viewer button { margin: 12px auto 0; display: block; border: 0; border-radius: 12px; padding: 10px 18px; font-weight: 700; background: #FFFFFF; color: #14213D; }
+#viewer img { max-width: 96vw; max-height: 82vh; display: block; border-radius: 16px; }
+#viewer button { margin: 12px auto 0; display: block; border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 800; background: #FFFFFF; color: #1F2E2A; }
 </style>
 </head>
 <body>
 
-<main id="view-repas">
-  <div class="hero" id="hero">
-    <img id="photo-img" alt="Photo du repas" hidden>
-    <label class="hero-empty" id="photo-btn" for="f-photo">
-      <span class="cam" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
-      <strong>Prendre mon repas en photo</strong>
-      <span>Facultatif · l'IA reconnaît le plat, sur votre téléphone</span>
-    </label>
-    <div class="hero-top gutter">
-      <span class="date-chip num" id="date-chip"></span>
-      <label class="hero-btn" id="photo-retake" for="f-photo" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Reprendre
-      </label>
-    </div>
-  </div>
-  <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
+<main id="view-repas" class="page gutter">
+  <div class="wrap">
+    <header class="hello">
+      <span class="date num" id="date-chip"></span>
+      <h1>Bon appétit</h1>
+    </header>
 
-  <div class="sheet gutter">
-    <div class="wrap">
-      <section class="ia" id="ia-zone" hidden aria-live="polite">
-        <span class="eyebrow" id="ia-eyebrow">Analyse de la photo</span>
-        <h1 id="ia-question" hidden></h1>
+    <section class="card photo-card" aria-label="Photo du repas">
+      <label class="ph-empty" id="photo-btn" for="f-photo">
+        <span class="cam" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+        <span><strong>Prendre mon repas en photo</strong><small>Facultatif · l'IA reconnaît le plat, sur votre téléphone</small></span>
+      </label>
+      <div class="ia" id="ia-zone" hidden aria-live="polite">
+        <div class="ph-row">
+          <img id="photo-img" alt="Photo du repas" hidden>
+          <div class="ph-side">
+            <span class="eyebrow" id="ia-eyebrow">Analyse de la photo</span>
+            <p class="ia-status" id="ia-status"></p>
+            <p class="reassure">Rien n'est envoyé : l'analyse se fait sur votre téléphone.</p>
+            <div class="ph-acts">
+              <label class="pill-btn" id="photo-retake" for="f-photo" hidden>Reprendre</label>
+              <button type="button" class="pill-btn ghost" id="photo-remove">Retirer</button>
+            </div>
+          </div>
+        </div>
+        <h2 class="ia-q" id="ia-question" hidden></h2>
         <div class="two" id="ia-buttons" hidden>
           <button type="button" class="btn-accent" id="ia-yes">Oui, c'est ça</button>
           <button type="button" class="btn-outline" id="ia-other">Autre plat…</button>
         </div>
         <p class="ia-alts" id="ia-alts" hidden></p>
-        <p class="ia-status" id="ia-status"></p>
-        <button type="button" class="link-muted" id="photo-remove">Retirer la photo</button>
-      </section>
+      </div>
+      <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
+    </section>
 
-      <section aria-labelledby="h-repas">
-        <div class="row-head">
-          <h2 id="h-repas">Mon repas</h2>
-          <button type="button" class="link" id="btn-focus-add">+ Ajouter</button>
-        </div>
-        <ul class="items" id="items"></ul>
-        <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez ci-dessous.</p>
-        <div style="display:grid;gap:6px">
-          <label for="f-search" class="quick-label">Saisir un plat ou une boisson</label>
-          <div class="search-row">
-            <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Tapez le nom : steak-frites, Coca…">
-            <button type="button" id="btn-add" class="btn-add">Ajouter</button>
-          </div>
-        </div>
-        <div class="results" id="results" hidden></div>
-        <div id="quick-zone" style="display:grid;gap:8px">
-          <div class="quick-label" id="quick-label">Suggestions</div>
-          <div id="quick" class="chips" aria-labelledby="quick-label"></div>
-          <button type="button" class="link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
-        </div>
-        <div id="browse" hidden style="display:grid;gap:12px"></div>
-      </section>
+    <label class="card gly-card" for="f-gly">
+      <span><strong>Ma glycémie</strong><small>avant le repas</small></span>
+      <span class="gly-box"><input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" class="num"><span class="u-label">g/L</span></span>
+    </label>
 
-      <section class="tiles" aria-label="Glycémie et insuline">
-        <label class="tile gly" for="f-gly">
-          <span class="lbl">Glycémie avant</span>
-          <span class="gly-in"><input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" class="num"><span class="u-label">g/L</span></span>
-        </label>
-        <div class="tile ins">
-          <label class="lbl" for="f-units">Insuline (unités)</label>
-          <div class="dose">
-            <button type="button" id="u-minus" aria-label="Retirer une demi-unité">−</button>
-            <input id="f-units" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="num">
-            <button type="button" id="u-plus" aria-label="Ajouter une demi-unité">+</button>
-          </div>
-        </div>
-      </section>
+    <section class="card" aria-labelledby="h-repas">
+      <div class="row-head">
+        <h2 id="h-repas">Mon assiette</h2>
+        <button type="button" class="link" id="btn-focus-add">+ Ajouter</button>
+      </div>
+      <ul class="items" id="items"></ul>
+      <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez ci-dessous.</p>
+      <div class="add-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Ajouter un plat ou une boisson" aria-label="Saisir un plat ou une boisson">
+        <button type="button" id="btn-add" class="btn-add">Ajouter</button>
+      </div>
+      <div class="results" id="results" hidden></div>
+      <div id="quick-zone" style="display:grid;gap:8px">
+        <div class="quick-label" id="quick-label">Suggestions</div>
+        <div id="quick" class="chips" aria-labelledby="quick-label"></div>
+        <button type="button" class="link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
+      </div>
+      <div id="browse" hidden style="display:grid;gap:12px"></div>
+    </section>
 
-      <section id="memo" hidden aria-labelledby="h-memo">
-        <h2 id="h-memo" style="font-size:18px;font-weight:800">Les fois précédentes</h2>
-        <div class="timeline" id="memo-body"></div>
-        <p class="note-txt">Vos propres notes. L'application ne calcule pas de dose.</p>
-      </section>
+    <section class="card memo" id="memo" hidden aria-labelledby="h-memo">
+      <h2 id="h-memo"><svg viewBox="0 0 24 24" fill="none" stroke="var(--memo-icon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Les fois précédentes</h2>
+      <div class="timeline" id="memo-body"></div>
+      <p class="note-txt">Vos propres notes. L'application ne calcule pas de dose.</p>
+    </section>
 
-      <section class="more" aria-label="Heure et note">
-        <div class="when-row"><label for="f-when">Heure du repas</label><input id="f-when" type="datetime-local"></div>
-        <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
-      </section>
-    </div>
+    <section class="card more" aria-label="Heure et note">
+      <div class="when-row"><label for="f-when">Heure du repas</label><input id="f-when" type="datetime-local"></div>
+      <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
+    </section>
+
+    <section class="card" aria-labelledby="h-ins">
+      <h2><label id="h-ins" for="f-units">Insuline injectée</label></h2>
+      <div class="dose">
+        <button type="button" id="u-minus" aria-label="Retirer 0,1 unité">−</button>
+        <span class="dose-val"><input id="f-units" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="num"><span>unités</span></span>
+        <button type="button" id="u-plus" aria-label="Ajouter 0,1 unité">+</button>
+      </div>
+      <p class="dose-hint">Par 0,1 unité · gardez le doigt appuyé pour aller plus vite, ou tapez le nombre.</p>
+      <button type="button" class="btn-save" id="btn-save">Enregistrer</button>
+    </section>
   </div>
 </main>
 
@@ -321,17 +335,16 @@ nav.tabs button[aria-current="page"] { color: var(--accent); font-weight: 800; }
       <h2>Effacer toutes les données</h2>
       <div id="wipe-zone"><button type="button" class="btn-danger" id="btn-wipe">Tout effacer…</button></div>
     </section>
-    <p class="notice">Mémo insuline · prototype. Un carnet personnel : il ne calcule aucune dose et ne remplace pas l'avis de votre médecin.</p>
+    <p class="notice" style="padding:0 4px">Mémo insuline · prototype. Un carnet personnel : il ne calcule aucune dose et ne remplace pas l'avis de votre médecin.</p>
   </div>
 </main>
 
 <div class="bottom gutter">
   <div class="wrap">
-    <button type="button" class="btn-save" id="btn-save">Enregistrer</button>
     <nav class="tabs" aria-label="Navigation">
-      <button type="button" data-view="repas" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Repas</button>
-      <button type="button" data-view="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg>Journal</button>
-      <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+      <button type="button" data-view="repas" aria-current="page">Repas</button>
+      <button type="button" data-view="journal">Journal</button>
+      <button type="button" data-view="reglages">Réglages</button>
     </nav>
   </div>
 </div>
