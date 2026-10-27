@@ -1,4 +1,4 @@
-# Mémo insuline
+# Insulink
 
 Mémo personnel pour personnes diabétiques : photo du repas, glycémie avant le repas, ce qui a été mangé et bu, unités d'insuline injectées. La fois suivante, l'application rappelle ce qui avait été fait pour le même repas.
 

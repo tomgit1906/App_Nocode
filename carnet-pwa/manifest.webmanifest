@@ -1,6 +1,6 @@
 {
-  "name": "Mémo insuline",
-  "short_name": "Mémo insuline",
+  "name": "Insulink",
+  "short_name": "Insulink",
   "description": "Mémo personnel : ce que j'ai mangé et bu, ma glycémie avant le repas et les unités injectées.",
   "lang": "fr",
   "start_url": "./",

@@ -417,7 +417,7 @@
   $("btn-backup").onclick = async () => {
     let photos = [];
     try { photos = await PhotoIA.exportAll(); } catch { toast("Les photos n'ont pas pu être ajoutées à la sauvegarde."); }
-    downloadFile("memo-insuline-sauvegarde-" + today() + ".json", JSON.stringify({ ...data, photos }), "application/json");
+    downloadFile("insulink-sauvegarde-" + today() + ".json", JSON.stringify({ ...data, photos }), "application/json");
     toast("Sauvegarde créée dans vos téléchargements");
   };
   $("btn-restore").onclick = () => $("f-restore").click();
@@ -434,7 +434,7 @@
       (d.custom || []).forEach(c => { if (!data.custom.some(x => norm(x.name) === norm(c.name))) data.custom.push(c); });
       save(); renderAll();
       toast(added.length + " repas restaurés");
-    } catch { toast("Ce fichier n'est pas une sauvegarde de Mémo insuline."); }
+    } catch { toast("Ce fichier n'est pas une sauvegarde d'Insulink."); }
     $("f-restore").value = "";
   };
   $("btn-csv").onclick = () => {
@@ -445,7 +445,7 @@
       const d = new Date(e.at);
       rows.push([d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), e.gly == null ? "" : fmtGly(e.gly), e.items.map(itemLabel).join(" + "), fmtUnits(e.units), e.note]);
     });
-    downloadFile("memo-insuline-" + today() + ".csv", "﻿" + rows.map(r => r.map(esc).join(";")).join("\n"), "text/csv");
+    downloadFile("insulink-" + today() + ".csv", "﻿" + rows.map(r => r.map(esc).join(";")).join("\n"), "text/csv");
   };
   $("btn-wipe").onclick = () => {
     const z = $("wipe-zone");
