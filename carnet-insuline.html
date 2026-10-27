@@ -1,0 +1,674 @@
+<title>Carnet d'insuline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: carnet à deux colonnes — saisie du repas à gauche, journal à droite, bilan par plat dessous ; une colonne sur téléphone. */
+:root {
+  --bg: #F3F5F7;
+  --surface: #FFFFFF;
+  --ink: #18212B;
+  --muted: #5B6773;
+  --line: #DCE2E8;
+  --accent: #2F55C8;        /* bleu « stylo à insuline » */
+  --accent-soft: #E6ECFB;
+  --ok: #1E7D4F;  --ok-bg: #E2F3EA;
+  --warn: #9A5B00; --warn-bg: #FBF0DC;
+  --low: #B2304A; --low-bg: #FBE4E9;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161C; --surface: #19212A; --ink: #E8EDF2; --muted: #9AA7B4; --line: #2A3540;
+  --accent: #8AA6FF; --accent-soft: #212E4E;
+  --ok: #6FD39F; --ok-bg: #173226; --warn: #F2B65A; --warn-bg: #362810; --low: #FF8FA5; --low-bg: #3A1A22;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161C; --surface: #19212A; --ink: #E8EDF2; --muted: #9AA7B4; --line: #2A3540;
+  --accent: #8AA6FF; --accent-soft: #212E4E;
+  --ok: #6FD39F; --ok-bg: #173226; --warn: #F2B65A; --warn-bg: #362810; --low: #FF8FA5; --low-bg: #3A1A22;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 800; }
+h2 { font-size: 21px; font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.top p { margin: 4px 0 0; max-width: 62ch; color: var(--muted); }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.notice { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 12px 16px; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: flex-start; }
+.notice strong { color: var(--ink); }
+.notice .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); margin-top: 7px; }
+.storage { font-size: 13px; color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+form { display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 60px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.unit-in { position: relative; }
+.unit-in input { padding-right: 52px; }
+.unit-in span { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--muted); pointer-events: none; }
+
+.dose { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.dose button { border: 0; border-radius: 0; background: transparent; width: 48px; font-size: 22px; color: var(--accent); }
+.dose button:hover { background: var(--accent-soft); }
+.dose input { border: 0; text-align: center; font-family: var(--f-display); font-size: 26px; font-weight: 800; background: transparent; border-radius: 0; }
+.dose .u { align-self: center; padding-right: 12px; color: var(--muted); font-size: 14px; }
+
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; }
+button:hover { border-color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; padding: 11px 16px; }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 6px 8px; }
+.btn-ghost:hover { color: var(--low); border-color: transparent; }
+
+.history { border-radius: 8px; background: var(--accent-soft); padding: 12px 14px; font-size: 14px; display: grid; gap: 6px; }
+.history h3 { font-size: 15px; font-weight: 600; }
+.history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.history li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 9px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.high { background: var(--warn-bg); color: var(--warn); }
+.pill.low { background: var(--low-bg); color: var(--low); }
+.pill.none { background: var(--bg); color: var(--muted); font-weight: 400; }
+.pill.ex { background: var(--bg); color: var(--muted); font-weight: 400; border: 1px dashed var(--line); }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.filters input { flex: 1 1 200px; }
+.filters select { flex: 0 1 180px; }
+
+.day { display: grid; gap: 0; }
+.day-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 0 6px; border-bottom: 1px solid var(--line); }
+.entry { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 14px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.entry .time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; padding-top: 2px; }
+.entry .what { min-width: 0; }
+.entry .what strong { overflow-wrap: anywhere; }
+.entry .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 14px; color: var(--muted); align-items: center; margin-top: 2px; }
+.entry .units { font-family: var(--f-display); font-weight: 800; font-size: 24px; text-align: right; line-height: 1.1; }
+.entry .units small { font-family: var(--f-body); font-weight: 400; font-size: 13px; color: var(--muted); display: block; }
+.entry .note { font-size: 14px; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
+.entry-actions { grid-column: 2 / -1; display: flex; gap: 4px; justify-content: flex-end; }
+.confirm { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.confirm button { padding: 4px 10px; }
+.confirm .yes { background: var(--low); border-color: var(--low); color: var(--surface); }
+
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; vertical-align: middle; }
+td:first-child { font-weight: 700; }
+th.r, td.r { text-align: right; }
+.bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--ok); vertical-align: middle; margin-right: 6px; }
+.bar-track { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: var(--line); vertical-align: middle; margin-right: 6px; overflow: hidden; }
+.bar-track .bar { margin: 0; display: block; }
+
+dialog { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); padding: 20px; width: min(440px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgba(10, 15, 20, 0.45); }
+dialog form { gap: 14px; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100vw - 32px); }
+@media (prefers-reduced-motion: no-preference) { .entry.new { animation: flash 1.2s ease-out; } @keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Carnet d'insuline</h1>
+      <p>Notez ce que vous mangez, les unités injectées et votre glycémie. Retrouvez ce qui a marché la dernière fois pour le même repas.</p>
+    </div>
+    <div class="top-actions">
+      <button type="button" id="btn-export">Exporter (CSV)</button>
+      <button type="button" id="btn-settings">Réglages</button>
+    </div>
+  </header>
+
+  <div class="notice" role="note">
+    <span class="dot" aria-hidden="true"></span>
+    <div><strong>Ce carnet ne calcule pas de dose.</strong> Il garde la trace de vos repas et de vos injections pour en parler avec votre médecin ou votre diabétologue. En cas d'hypoglycémie ou de doute, suivez votre protocole de soins. <span class="storage" id="storage-state">Connexion au stockage…</span></div>
+  </div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-new">
+      <h2 id="h-new">Nouveau repas</h2>
+      <form id="meal-form" autocomplete="off">
+        <div class="field">
+          <label for="f-food">Ce que j'ai mangé</label>
+          <input id="f-food" list="foods" required placeholder="ex. steak-frites, salade" maxlength="120">
+          <datalist id="foods"></datalist>
+        </div>
+        <div id="hist" class="history" hidden></div>
+        <div class="row">
+          <div class="field">
+            <label for="f-when">Date et heure</label>
+            <input id="f-when" type="datetime-local" required>
+          </div>
+          <div class="field">
+            <label for="f-type">Repas</label>
+            <select id="f-type">
+              <option value="petit-dej">Petit-déjeuner</option>
+              <option value="dejeuner">Déjeuner</option>
+              <option value="gouter">Goûter / collation</option>
+              <option value="diner">Dîner</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-units">Insuline injectée</label>
+          <div class="dose">
+            <button type="button" id="dose-minus" aria-label="Retirer 0,5 unité">−</button>
+            <input id="f-units" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="3" required class="num">
+            <span class="u">unités</span>
+            <button type="button" id="dose-plus" aria-label="Ajouter 0,5 unité">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="f-before">Glycémie avant</label>
+            <div class="unit-in"><input id="f-before" type="number" inputmode="decimal" step="any" min="0" class="num"><span class="u-label">g/L</span></div>
+          </div>
+          <div class="field">
+            <label for="f-after">Glycémie 2 h après</label>
+            <div class="unit-in"><input id="f-after" type="number" inputmode="decimal" step="any" min="0" class="num" placeholder="plus tard"><span class="u-label">g/L</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-note">Note</label>
+          <textarea id="f-note" maxlength="300" placeholder="ex. grosse portion, sport dans l'après-midi"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" id="btn-save">Enregistrer le repas</button>
+        <p class="small muted" style="margin:0">La glycémie après peut être ajoutée plus tard en modifiant le repas dans le journal.</p>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="h-journal">
+      <div class="panel-head">
+        <h2 id="h-journal">Journal</h2>
+        <span class="small muted num" id="count"></span>
+      </div>
+      <div class="filters">
+        <input id="q" type="search" placeholder="Rechercher un plat…" aria-label="Rechercher un plat">
+        <select id="q-type" aria-label="Filtrer par repas">
+          <option value="">Tous les repas</option>
+          <option value="petit-dej">Petit-déjeuner</option>
+          <option value="dejeuner">Déjeuner</option>
+          <option value="gouter">Goûter / collation</option>
+          <option value="diner">Dîner</option>
+        </select>
+      </div>
+      <div id="journal"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-plats">
+    <div class="panel-head">
+      <h2 id="h-plats">Bilan par plat</h2>
+      <span class="small muted" id="target-label"></span>
+    </div>
+    <div class="table-wrap" id="summary"></div>
+  </section>
+</div>
+
+<dialog id="dlg-settings">
+  <form method="dialog" id="settings-form">
+    <h2>Réglages</h2>
+    <div class="field">
+      <label for="s-unit">Unité de glycémie</label>
+      <select id="s-unit"><option value="gl">g/L</option><option value="mg">mg/dL</option><option value="mmol">mmol/L</option></select>
+    </div>
+    <div class="row">
+      <div class="field"><label for="s-low">Cible après repas : min</label><input id="s-low" type="number" step="any" class="num"></div>
+      <div class="field"><label for="s-high">Cible après repas : max</label><input id="s-high" type="number" step="any" class="num"></div>
+    </div>
+    <p class="small muted" style="margin:0">Utilisez les objectifs fixés avec votre médecin. Par défaut : 0,70 à 1,80 g/L deux heures après le repas.</p>
+    <div class="dlg-actions"><button value="cancel" type="button" id="s-cancel">Annuler</button><button class="btn-primary" value="ok" type="submit">Enregistrer</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-edit">
+  <form method="dialog" id="edit-form">
+    <h2 id="e-title">Modifier le repas</h2>
+    <div class="field"><label for="e-food">Ce que j'ai mangé</label><input id="e-food" required maxlength="120"></div>
+    <div class="row">
+      <div class="field"><label for="e-units">Unités</label><input id="e-units" type="number" step="0.5" min="0" class="num" required></div>
+      <div class="field"><label for="e-type">Repas</label><select id="e-type"><option value="petit-dej">Petit-déjeuner</option><option value="dejeuner">Déjeuner</option><option value="gouter">Goûter / collation</option><option value="diner">Dîner</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="e-before">Glycémie avant (<span class="u-label">g/L</span>)</label><input id="e-before" type="number" step="any" min="0" class="num"></div>
+      <div class="field"><label for="e-after">Glycémie 2 h après (<span class="u-label">g/L</span>)</label><input id="e-after" type="number" step="any" min="0" class="num"></div>
+    </div>
+    <div class="field"><label for="e-note">Note</label><textarea id="e-note" maxlength="300"></textarea></div>
+    <div class="dlg-actions"><button type="button" id="e-cancel">Annuler</button><button class="btn-primary" type="submit">Enregistrer</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  // ---------- état ----------
+  // Glycémies stockées en mg/dL (entiers) ; affichage converti selon l'unité choisie.
+  const DEFAULT_SETTINGS = { unit: "gl", lowMg: 70, highMg: 180 };
+  let settings = { ...DEFAULT_SETTINGS };
+  let entries = [];
+  let store = null;          // { mode, saveEntry, deleteEntry, saveSettings }
+  let lastAddedId = null;
+  let editingId = null;
+  let downloads = null;
+
+  const TYPES = { "petit-dej": "Petit-déjeuner", dejeuner: "Déjeuner", gouter: "Goûter / collation", diner: "Dîner" };
+  const $ = (id) => document.getElementById(id);
+  const norm = (s) => (s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ");
+  const fmtNum = (n, d) => n.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtUnits = (u) => fmtNum(u, Number.isInteger(u) ? 0 : 1);
+
+  const UNIT_LABEL = { gl: "g/L", mg: "mg/dL", mmol: "mmol/L" };
+  function toDisplay(mg) {
+    if (mg == null) return null;
+    if (settings.unit === "mg") return Math.round(mg);
+    if (settings.unit === "mmol") return Math.round(mg / 18.016 * 10) / 10;
+    return Math.round(mg) / 100;
+  }
+  function fmtGly(mg) {
+    const v = toDisplay(mg);
+    if (v == null) return "—";
+    return settings.unit === "mg" ? fmtNum(v, 0) : settings.unit === "mmol" ? fmtNum(v, 1) : fmtNum(v, 2);
+  }
+  function fromInput(str) {
+    if (str === "" || str == null) return null;
+    const v = parseFloat(String(str).replace(",", "."));
+    if (!isFinite(v) || v <= 0) return null;
+    if (settings.unit === "mg") return Math.round(v);
+    if (settings.unit === "mmol") return Math.round(v * 18.016);
+    return Math.round(v * 100);
+  }
+  function inputValue(mg) { const v = toDisplay(mg); return v == null ? "" : String(v); }
+  function status(mg) {
+    if (mg == null) return "none";
+    if (mg < settings.lowMg) return "low";
+    if (mg > settings.highMg) return "high";
+    return "ok";
+  }
+  const STATUS_TXT = { ok: "dans la cible", high: "au-dessus", low: "en dessous", none: "pas de mesure" };
+  function pill(mg) {
+    const s = status(mg);
+    const span = document.createElement("span");
+    span.className = "pill " + s;
+    span.textContent = mg == null ? "après : —" : fmtGly(mg) + " · " + STATUS_TXT[s];
+    return span;
+  }
+
+  // ---------- stockage ----------
+  function localStore() {
+    const KEY = "carnet-insuline-v1";
+    let ok = true;
+    try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); entries = d.entries || []; settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) }; } }
+    catch { ok = false; }
+    const persist = () => { try { localStorage.setItem(KEY, JSON.stringify({ entries, settings })); } catch { ok = false; } };
+    return {
+      mode: ok ? "local" : "memory",
+      async saveEntry(e) { const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.push(e); persist(); render(); },
+      async deleteEntry(id) { entries = entries.filter(x => x.id !== id); persist(); render(); },
+      async saveSettings() { persist(); render(); },
+    };
+  }
+
+  async function cloudStore() {
+    const c = window.claude;
+    if (!c || typeof c.use !== "function") return null;
+    const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+    if (!db || !user) return null;
+    const uid = await user.id();
+    if (!uid) return null;
+    const col = db.collection("data/users/" + uid);
+    const settingsRef = col.doc("settings");
+    let readOnly = false;
+    col.onSnapshot((snap) => {
+      const list = [];
+      snap.docs.forEach(d => {
+        if (d.id === "settings") settings = { ...DEFAULT_SETTINGS, ...d.data() };
+        else if (d.id.startsWith("m_")) list.push(d.data());
+      });
+      entries = list;
+      render();
+    }, () => { setStorage("Le stockage en ligne ne répond plus. Rechargez la page."); });
+    const guard = async (fn) => {
+      if (readOnly) { toast("Votre accès à ce carnet est en lecture seule."); return; }
+      try { await fn(); }
+      catch (e) {
+        if (e && e.code === "invalid_argument") { readOnly = true; toast("Votre accès à ce carnet est en lecture seule."); }
+        else if (e && e.code === "quota_exceeded") toast("Le carnet est plein. Supprimez d'anciens repas pour en ajouter.");
+        else toast("Enregistrement impossible pour l'instant. Réessayez dans un moment.");
+      }
+    };
+    return {
+      mode: "cloud",
+      saveEntry: (e) => guard(() => col.doc(e.id).set(e)),
+      deleteEntry: (id) => guard(() => col.doc(id).delete()),
+      saveSettings: () => guard(() => settingsRef.set({ ...settings })),
+    };
+  }
+
+  function setStorage(txt) { $("storage-state").textContent = txt; }
+
+  // ---------- rendu ----------
+  function render() {
+    renderUnits();
+    renderFoods();
+    renderHistory();
+    renderJournal();
+    renderSummary();
+  }
+
+  function renderUnits() {
+    document.querySelectorAll(".u-label").forEach(el => el.textContent = UNIT_LABEL[settings.unit]);
+    $("target-label").textContent = "Cible après repas : " + fmtGly(settings.lowMg) + " – " + fmtGly(settings.highMg) + " " + UNIT_LABEL[settings.unit];
+  }
+
+  function renderFoods() {
+    const names = new Map();
+    entries.forEach(e => { const k = norm(e.food); if (!names.has(k)) names.set(k, e.food); });
+    const dl = $("foods");
+    dl.replaceChildren(...[...names.values()].sort((a, b) => a.localeCompare(b, "fr")).map(n => { const o = document.createElement("option"); o.value = n; return o; }));
+  }
+
+  function sorted(list) { return [...list].sort((a, b) => b.at.localeCompare(a.at)); }
+
+  function renderHistory() {
+    const box = $("hist");
+    const key = norm($("f-food").value);
+    const past = key ? sorted(entries.filter(e => norm(e.food) === key)).slice(0, 4) : [];
+    if (!past.length) { box.hidden = true; box.replaceChildren(); return; }
+    const h = document.createElement("h3");
+    h.textContent = "Les dernières fois pour « " + past[0].food + " »";
+    const ul = document.createElement("ul");
+    past.forEach(e => {
+      const li = document.createElement("li");
+      const d = document.createElement("span"); d.className = "num muted"; d.textContent = fmtDateShort(e.at);
+      const u = document.createElement("strong"); u.className = "num"; u.textContent = fmtUnits(e.units) + " U";
+      li.append(d, u, pill(e.afterMg));
+      if (e.example) { const x = document.createElement("span"); x.className = "pill ex"; x.textContent = "exemple"; li.append(x); }
+      ul.append(li);
+    });
+    const p = document.createElement("p"); p.className = "small muted"; p.style.margin = "0";
+    p.textContent = "Repère personnel seulement. La dose du jour dépend aussi de votre glycémie, de la portion et de l'activité.";
+    box.replaceChildren(h, ul, p);
+    box.hidden = false;
+  }
+
+  function fmtDateShort(iso) { const d = new Date(iso); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); }
+  function fmtDay(iso) {
+    const d = new Date(iso), today = new Date(); const y = new Date(); y.setDate(today.getDate() - 1);
+    const same = (a, b) => a.toDateString() === b.toDateString();
+    if (same(d, today)) return "Aujourd'hui";
+    if (same(d, y)) return "Hier";
+    return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+  }
+
+  function renderJournal() {
+    const q = norm($("q").value), t = $("q-type").value;
+    const list = sorted(entries).filter(e => (!q || norm(e.food).includes(q)) && (!t || e.type === t));
+    $("count").textContent = entries.length ? entries.length + (entries.length > 1 ? " repas notés" : " repas noté") : "";
+    const root = $("journal");
+    if (!entries.length) {
+      const div = document.createElement("div"); div.className = "empty";
+      const p = document.createElement("p"); p.style.margin = "0";
+      p.textContent = "Aucun repas pour l'instant. Notez votre prochain repas avec le formulaire, ou chargez quelques exemples pour voir comment le carnet fonctionne.";
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "Charger des exemples"; b.onclick = loadExamples;
+      div.append(p, b); root.replaceChildren(div); return;
+    }
+    if (!list.length) { const p = document.createElement("p"); p.className = "empty"; p.textContent = "Aucun repas ne correspond à cette recherche."; root.replaceChildren(p); return; }
+    const frag = document.createDocumentFragment();
+    let curDay = null, dayEl = null;
+    list.slice(0, 200).forEach(e => {
+      const dayKey = e.at.slice(0, 10);
+      if (dayKey !== curDay) {
+        curDay = dayKey; dayEl = document.createElement("div"); dayEl.className = "day";
+        const l = document.createElement("div"); l.className = "day-label"; l.textContent = fmtDay(e.at);
+        dayEl.append(l); frag.append(dayEl);
+      }
+      dayEl.append(entryEl(e));
+    });
+    root.replaceChildren(frag);
+    lastAddedId = null;
+  }
+
+  function entryEl(e) {
+    const row = document.createElement("div"); row.className = "entry" + (e.id === lastAddedId ? " new" : "");
+    const time = document.createElement("div"); time.className = "time"; time.textContent = new Date(e.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const what = document.createElement("div"); what.className = "what";
+    const name = document.createElement("strong"); name.textContent = e.food;
+    const meta = document.createElement("div"); meta.className = "meta";
+    const ty = document.createElement("span"); ty.textContent = TYPES[e.type] || "";
+    const bef = document.createElement("span"); bef.className = "num"; bef.textContent = "avant : " + fmtGly(e.beforeMg);
+    meta.append(ty, bef, pill(e.afterMg));
+    if (e.example) { const x = document.createElement("span"); x.className = "pill ex"; x.textContent = "exemple"; meta.append(x); }
+    what.append(name, meta);
+    if (e.note) { const n = document.createElement("div"); n.className = "note"; n.textContent = e.note; what.append(n); }
+    const u = document.createElement("div"); u.className = "units num"; u.textContent = fmtUnits(e.units);
+    const us = document.createElement("small"); us.textContent = "unités"; u.append(us);
+    const act = document.createElement("div"); act.className = "entry-actions";
+    const ed = document.createElement("button"); ed.type = "button"; ed.className = "btn-ghost"; ed.textContent = e.afterMg == null ? "Ajouter la glycémie après" : "Modifier";
+    ed.style.color = e.afterMg == null ? "var(--accent)" : "";
+    ed.onclick = () => openEdit(e);
+    const del = document.createElement("button"); del.type = "button"; del.className = "btn-ghost"; del.textContent = "Supprimer";
+    del.onclick = () => {
+      const c = document.createElement("span"); c.className = "confirm";
+      const t = document.createElement("span"); t.textContent = "Supprimer ce repas ?";
+      const y = document.createElement("button"); y.type = "button"; y.className = "yes"; y.textContent = "Supprimer";
+      const n = document.createElement("button"); n.type = "button"; n.textContent = "Garder";
+      y.onclick = async () => { await store.deleteEntry(e.id); toast("Repas supprimé"); };
+      n.onclick = () => act.replaceChildren(ed, del);
+      c.append(t, y, n); act.replaceChildren(c); y.focus();
+    };
+    act.append(ed, del);
+    row.append(time, what, u, act);
+    return row;
+  }
+
+  function renderSummary() {
+    const groups = new Map();
+    entries.forEach(e => {
+      const k = norm(e.food);
+      if (!groups.has(k)) groups.set(k, { name: e.food, list: [] });
+      groups.get(k).list.push(e);
+    });
+    const root = $("summary");
+    if (!groups.size) { const p = document.createElement("p"); p.className = "muted"; p.style.margin = "0"; p.textContent = "Le bilan apparaîtra ici : pour chaque plat, la dose habituelle et la part des glycémies après repas restées dans votre cible."; root.replaceChildren(p); return; }
+    const rows = [...groups.values()].sort((a, b) => b.list.length - a.list.length || a.name.localeCompare(b.name, "fr"));
+    const table = document.createElement("table");
+    table.innerHTML = '<thead><tr><th>Plat</th><th class="r">Fois</th><th class="r">Dose moyenne</th><th class="r">Min – max</th><th class="r">Après (moy.)</th><th>Dans la cible</th></tr></thead>';
+    const tb = document.createElement("tbody");
+    rows.forEach(g => {
+      const units = g.list.map(e => e.units);
+      const after = g.list.map(e => e.afterMg).filter(v => v != null);
+      const inRange = after.filter(v => status(v) === "ok").length;
+      const avgAfter = after.length ? after.reduce((a, b) => a + b, 0) / after.length : null;
+      const tr = document.createElement("tr");
+      const cell = (txt, cls) => { const td = document.createElement("td"); if (cls) td.className = cls; td.textContent = txt; tr.append(td); return td; };
+      cell(sorted(g.list)[0].food);
+      cell(String(g.list.length), "r");
+      cell(fmtUnits(Math.round(units.reduce((a, b) => a + b, 0) / units.length * 2) / 2) + " U", "r");
+      cell(fmtUnits(Math.min(...units)) + " – " + fmtUnits(Math.max(...units)) + " U", "r");
+      const tdA = cell("", "r"); if (avgAfter == null) tdA.textContent = "—"; else tdA.append(pill(Math.round(avgAfter)));
+      const tdR = cell("");
+      if (!after.length) tdR.textContent = "pas encore de mesure";
+      else {
+        const pct = Math.round(inRange / after.length * 100);
+        const track = document.createElement("span"); track.className = "bar-track";
+        const bar = document.createElement("span"); bar.className = "bar"; bar.style.width = pct + "%"; track.append(bar);
+        const t = document.createElement("span"); t.textContent = inRange + "/" + after.length;
+        tdR.append(track, t);
+      }
+      tb.append(tr);
+    });
+    table.append(tb);
+    root.replaceChildren(table);
+  }
+
+  // ---------- actions ----------
+  function nowLocal() { const d = new Date(); d.setSeconds(0, 0); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+  function guessType(dt) { const h = new Date(dt).getHours(); return h < 10 ? "petit-dej" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner"; }
+  function newId() { return "m_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function resetForm() {
+    $("meal-form").reset();
+    $("f-when").value = nowLocal();
+    $("f-type").value = guessType($("f-when").value);
+    $("f-units").value = "3";
+    renderHistory();
+  }
+
+  $("meal-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const units = parseFloat(String($("f-units").value).replace(",", "."));
+    if (!isFinite(units) || units < 0) { toast("Indiquez le nombre d'unités injectées."); return; }
+    const e = {
+      id: newId(),
+      food: $("f-food").value.trim(),
+      at: $("f-when").value,
+      type: $("f-type").value,
+      units: Math.round(units * 2) / 2,
+      beforeMg: fromInput($("f-before").value),
+      afterMg: fromInput($("f-after").value),
+      note: $("f-note").value.trim(),
+    };
+    if (!e.food) return;
+    lastAddedId = e.id;
+    await store.saveEntry(e);
+    toast("Repas enregistré : " + e.food + ", " + fmtUnits(e.units) + " U");
+    resetForm();
+  });
+
+  $("f-food").addEventListener("input", renderHistory);
+  $("f-when").addEventListener("change", () => { $("f-type").value = guessType($("f-when").value); });
+  const step = (d) => { const v = parseFloat(String($("f-units").value).replace(",", ".")) || 0; $("f-units").value = String(Math.max(0, Math.round((v + d) * 2) / 2)); };
+  $("dose-minus").onclick = () => step(-0.5);
+  $("dose-plus").onclick = () => step(0.5);
+  $("q").addEventListener("input", renderJournal);
+  $("q-type").addEventListener("change", renderJournal);
+
+  function openEdit(e) {
+    editingId = e.id;
+    $("e-food").value = e.food; $("e-units").value = e.units; $("e-type").value = e.type;
+    $("e-before").value = inputValue(e.beforeMg); $("e-after").value = inputValue(e.afterMg); $("e-note").value = e.note || "";
+    $("dlg-edit").showModal();
+    (e.afterMg == null ? $("e-after") : $("e-food")).focus();
+  }
+  $("e-cancel").onclick = () => $("dlg-edit").close();
+  $("edit-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const old = entries.find(x => x.id === editingId); if (!old) { $("dlg-edit").close(); return; }
+    const units = parseFloat(String($("e-units").value).replace(",", "."));
+    const e = { ...old, food: $("e-food").value.trim() || old.food, units: isFinite(units) ? Math.round(units * 2) / 2 : old.units, type: $("e-type").value,
+      beforeMg: fromInput($("e-before").value), afterMg: fromInput($("e-after").value), note: $("e-note").value.trim() };
+    $("dlg-edit").close();
+    await store.saveEntry(e);
+    toast("Repas mis à jour");
+  });
+
+  let settingsBackup = null;
+  $("btn-settings").onclick = () => {
+    settingsBackup = { ...settings };
+    $("s-unit").value = settings.unit; $("s-low").value = inputValue(settings.lowMg); $("s-high").value = inputValue(settings.highMg);
+    $("dlg-settings").showModal();
+  };
+  $("s-unit").addEventListener("change", () => {
+    // reconvertit les bornes affichées dans la nouvelle unité
+    const low = fromInput($("s-low").value), high = fromInput($("s-high").value);
+    settings.unit = $("s-unit").value;
+    $("s-low").value = inputValue(low); $("s-high").value = inputValue(high);
+  });
+  $("s-cancel").onclick = () => { $("dlg-settings").close(); };
+  // fermé sans enregistrer (Annuler ou Échap) : on revient aux réglages d'avant
+  $("dlg-settings").addEventListener("close", () => { if (settingsBackup) settings = settingsBackup; settingsBackup = null; render(); });
+  $("settings-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    settings.unit = $("s-unit").value;
+    const low = fromInput($("s-low").value), high = fromInput($("s-high").value);
+    if (low == null || high == null || low >= high) { toast("La cible minimum doit être inférieure au maximum."); return; }
+    settings.lowMg = low; settings.highMg = high;
+    settingsBackup = null;
+    $("dlg-settings").close();
+    await store.saveSettings();
+    toast("Réglages enregistrés");
+  });
+
+  async function loadExamples() {
+    const base = new Date(); base.setMinutes(0, 0, 0);
+    const at = (daysAgo, h, m) => { const d = new Date(base); d.setDate(d.getDate() - daysAgo); d.setHours(h, m); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+    const ex = [
+      ["Steak-frites", 1, 12, 30, "dejeuner", 3, 112, 158, ""],
+      ["Pâtes bolognaise", 1, 19, 45, "diner", 4, 105, 214, "grosse assiette"],
+      ["Tartines et café", 0, 7, 50, "petit-dej", 2, 98, 142, ""],
+      ["Steak-frites", 4, 12, 15, "dejeuner", 3, 120, 171, ""],
+      ["Pâtes bolognaise", 6, 20, 0, "diner", 4.5, 101, 166, ""],
+      ["Salade composée", 3, 12, 45, "dejeuner", 1.5, 109, 64, "marche après le repas"],
+    ];
+    for (const [food, d, h, m, type, units, b, a, note] of ex) {
+      await store.saveEntry({ id: newId(), food, at: at(d, h, m), type, units, beforeMg: b, afterMg: a, note, example: true });
+    }
+    toast("Exemples chargés. Supprimez-les quand vous voulez.");
+  }
+
+  function toCsv() {
+    const esc = (v) => { const s = v == null ? "" : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const u = UNIT_LABEL[settings.unit];
+    const head = ["Date", "Heure", "Repas", "Plat", "Unités", "Glycémie avant (" + u + ")", "Glycémie 2h après (" + u + ")", "Note"];
+    const lines = sorted(entries).filter(e => !e.example).map(e => {
+      const d = new Date(e.at);
+      return [d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), TYPES[e.type], e.food,
+        fmtUnits(e.units), e.beforeMg == null ? "" : fmtGly(e.beforeMg), e.afterMg == null ? "" : fmtGly(e.afterMg), e.note].map(esc).join(";");
+    });
+    return "﻿" + [head.join(";"), ...lines].join("\n");
+  }
+  $("btn-export").onclick = async () => {
+    if (!entries.some(e => !e.example)) { toast("Rien à exporter : le carnet ne contient encore aucun repas réel."); return; }
+    if (!downloads) { toast("L'export n'est pas disponible dans cette vue."); return; }
+    try { await downloads.save({ filename: "carnet-insuline-" + new Date().toISOString().slice(0, 10) + ".csv", data: toCsv() }); toast("Fichier exporté"); }
+    catch (e) { if (!e || e.code !== "declined") toast("Export impossible dans cette vue."); }
+  };
+
+  let toastTimer;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200); }
+
+  // ---------- démarrage ----------
+  resetForm();
+  renderUnits();
+  renderSummary();
+  $("journal").replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: "Chargement de votre carnet…" }));
+
+  (async () => {
+    let cloud = null;
+    try { cloud = await cloudStore(); } catch { cloud = null; }
+    if (cloud) { store = cloud; setStorage("Vos données sont privées : elles sont enregistrées dans votre compte, visibles par vous seul."); }
+    else {
+      store = localStore();
+      setStorage(store.mode === "local" ? "Vos données restent dans ce navigateur, sur cet appareil uniquement." : "Le stockage est indisponible ici : les repas seront perdus en fermant la page.");
+      render();
+    }
+    try { downloads = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch { downloads = null; }
+    $("btn-export").hidden = !downloads;
+  })();
+})();
+</script>

@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mémo insuline</title>
+<meta name="theme-color" content="#2F55C8">
+<meta name="description" content="Mémo personnel : ce que j'ai mangé et bu, ma glycémie avant le repas et les unités d'insuline injectées.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+/* Mise en page : une colonne façon application mobile, barre d'onglets fixe en bas ; centrée et limitée en largeur sur ordinateur. */
+:root {
+  --bg: #F3F5F7;
+  --surface: #FFFFFF;
+  --ink: #18212B;
+  --muted: #5B6773;
+  --line: #DCE2E8;
+  --accent: #2F55C8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E6ECFB;
+  --drink: #0F7C8A;
+  --drink-soft: #DDF1F3;
+  --danger: #B2304A;
+  --f: system-ui, "Roboto", "Segoe UI", sans-serif;
+  --r: 12px;
+  --tab-h: 64px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #11161C; --surface: #1A222B; --ink: #E8EDF2; --muted: #9AA7B4; --line: #2B3641;
+  --accent: #8AA6FF; --accent-ink: #0E1530; --accent-soft: #212E4E;
+  --drink: #63CAD6; --drink-soft: #15343A; --danger: #FF8FA5;
+  color-scheme: dark; } }
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 16px; line-height: 1.45; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+
+header.app { position: sticky; top: 0; z-index: 5; background: var(--accent); color: var(--accent-ink);
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+header.app h1 { font-size: 20px; font-weight: 800; max-width: 640px; margin: 0 auto; }
+
+main { max-width: 640px; margin: 0 auto; padding-block: 16px calc(var(--tab-h) + 32px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.step { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.step .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 56px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; cursor: pointer; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 15px; font-size: 17px; width: 100%; }
+.btn-link { border: 0; background: none; color: var(--accent); padding: 6px 0; font-weight: 600; }
+.btn-danger { color: var(--danger); }
+
+/* glycémie */
+.gly { display: flex; align-items: center; gap: 10px; }
+.gly input { font-size: 30px; font-weight: 800; text-align: center; padding: 8px; flex: 1; }
+.gly .u { font-size: 16px; color: var(--muted); min-width: 56px; }
+
+/* recherche aliments */
+.search { position: relative; display: grid; gap: 6px; }
+.search-row { display: flex; gap: 8px; }
+.search-row input { flex: 1; }
+.btn-add { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 0 16px; }
+.btn-add:disabled { opacity: 0.45; cursor: default; }
+.results { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.results button { border: 0; border-radius: 0; border-bottom: 1px solid var(--line); text-align: left; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px; background: var(--surface); }
+.results button:last-child { border-bottom: 0; }
+.results .add-new { display: grid; gap: 8px; padding: 12px; }
+.results .add-new .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.results .add-new .two button { border: 1px solid var(--line); border-radius: 10px; justify-content: center; }
+.tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.tag.plat { background: var(--accent-soft); color: var(--accent); }
+.tag.boisson { background: var(--drink-soft); color: var(--drink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border-radius: 999px; padding: 7px 12px; font-size: 15px; }
+.chip.boisson { border-color: var(--drink); color: var(--drink); }
+.photo-btn { display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px dashed var(--accent); color: var(--accent); background: var(--accent-soft);
+  border-radius: var(--r); padding: 20px; font-weight: 700; font-size: 17px; cursor: pointer; }
+.photo-btn svg { width: 28px; height: 28px; }
+.photo-preview { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: start; }
+.photo-preview img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: block; background: var(--bg); }
+.photo-side { display: grid; gap: 10px; min-width: 0; }
+.ia-status { margin: 0; font-size: 15px; }
+.btn-small { font-size: 14px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; display: inline-block; }
+.ia-props { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--accent-soft); }
+.chip.ia { font-weight: 700; background: var(--surface); }
+.chip .mine { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 4px; }
+.thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: var(--bg); border: 0; padding: 0; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block; }
+.memo-row.has-photo { grid-template-columns: 56px minmax(0, 1fr) auto; }
+.memo-row.has-photo .thumb { grid-row: span 2; }
+#viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 92vh; }
+#viewer::backdrop { background: rgba(0, 0, 0, 0.85); }
+#viewer img { max-width: 96vw; max-height: 82vh; display: block; border-radius: 10px; }
+#viewer button { margin: 10px auto 0; display: block; }
+.quick-label, .browse-cat { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+/* liste du repas */
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.items li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--bg); border-radius: 10px; padding: 8px 8px 8px 12px; }
+.items li .name { font-weight: 700; overflow-wrap: anywhere; }
+.items li select { padding: 6px 8px; width: auto; margin-top: 4px; font-size: 14px; }
+.items li .rm { border: 0; background: none; font-size: 22px; line-height: 1; color: var(--muted); padding: 8px 10px; }
+.empty-list { color: var(--muted); font-size: 15px; margin: 0; }
+
+/* mémo */
+.memo { background: var(--accent-soft); border-color: transparent; }
+.memo h3 { font-size: 16px; }
+.memo-group { display: grid; gap: 6px; }
+.memo-group .lbl { font-size: 13px; color: var(--muted); font-weight: 700; }
+.memo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; background: var(--surface); border-radius: 10px; padding: 10px 12px; }
+.memo-row .when { font-size: 13px; color: var(--muted); }
+.memo-row .what { font-size: 14px; overflow-wrap: anywhere; }
+.memo-row .u { font-size: 24px; font-weight: 800; text-align: right; grid-row: span 2; }
+.memo-row .u small { font-size: 12px; font-weight: 400; color: var(--muted); display: block; }
+.memo-note { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* unités */
+.dose { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.dose button { border: 0; border-radius: 0; background: transparent; width: 64px; font-size: 28px; color: var(--accent); }
+.dose input { border: 0; border-radius: 0; text-align: center; font-size: 34px; font-weight: 800; background: transparent; padding: 6px; }
+.dose .u { align-self: center; padding-right: 4px; color: var(--muted); }
+.when-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+.when-row input { width: auto; flex: 1 1 200px; }
+
+/* journal */
+.day-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 8px 0 -4px; }
+.entry { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; }
+.entry .t { color: var(--muted); font-size: 14px; padding-top: 2px; }
+.entry .its { display: flex; flex-wrap: wrap; gap: 6px; }
+.entry .meta { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.entry .u { font-size: 26px; font-weight: 800; text-align: right; line-height: 1.1; }
+.entry .u small { font-size: 12px; font-weight: 400; color: var(--muted); display: block; }
+.entry .note { font-size: 14px; color: var(--muted); font-style: italic; margin-top: 4px; overflow-wrap: anywhere; }
+.entry .acts { grid-column: 2 / -1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+.entry .acts button { padding: 6px 10px; font-size: 14px; }
+.pill { font-size: 13px; border-radius: 999px; padding: 2px 9px; background: var(--bg); border: 1px solid var(--line); }
+.pill.boisson { color: var(--drink); border-color: var(--drink-soft); background: var(--drink-soft); }
+.pill.plat { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
+.empty { text-align: center; color: var(--muted); padding: 32px 8px; }
+
+/* onglets */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 max(0px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(0px, env(safe-area-inset-left, 0px)); }
+nav.tabs button { border: 0; border-radius: 0; background: none; height: var(--tab-h); font-size: 14px; font-weight: 600; color: var(--muted); display: grid; place-items: center; gap: 0; padding: 6px; }
+nav.tabs button svg { width: 24px; height: 24px; }
+nav.tabs button[aria-current="page"] { color: var(--accent); }
+
+.notice { font-size: 13px; color: var(--muted); margin: 0; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tab-h) + 16px + env(safe-area-inset-bottom, 0px)); z-index: 10;
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 15px; max-width: calc(100vw - 32px); }
+.settings-row { display: grid; gap: 6px; }
+.settings-row label { font-weight: 700; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<header class="app"><h1 id="view-title">Nouveau repas</h1></header>
+
+<main id="view-repas">
+  <section class="card" aria-labelledby="s-photo">
+    <div class="step"><span id="s-photo">1 · Photo du repas</span><span class="opt">facultatif</span></div>
+    <label class="photo-btn" id="photo-btn" for="f-photo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      Prendre en photo
+    </label>
+    <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
+    <div class="photo-preview" id="photo-preview" hidden>
+      <img id="photo-img" alt="Photo du repas">
+      <div class="photo-side">
+        <p class="ia-status" id="ia-status" role="status"></p>
+        <div class="btn-row">
+          <label class="btn-small" for="f-photo">Reprendre</label>
+          <button type="button" class="btn-small" id="photo-remove">Retirer</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="s-gly">
+    <div class="step"><span id="s-gly">2 · Glycémie avant le repas</span><span class="opt">facultatif</span></div>
+    <div class="gly">
+      <input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-labelledby="s-gly" class="num">
+      <span class="u u-label">g/L</span>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="s-items">
+    <div class="step"><span id="s-items">3 · Ce que je mange et bois</span></div>
+    <div class="ia-props" id="ia-props" hidden>
+      <div class="quick-label">D'après la photo, c'est peut-être :</div>
+      <div class="chips" id="ia-chips"></div>
+      <p class="memo-note">Touchez le bon choix. Sinon, cherchez-le ou tapez son nom ci-dessous : l'application s'en souviendra.</p>
+    </div>
+    <ul class="items" id="items"></ul>
+    <p class="empty-list" id="items-empty">Ajoutez un plat ou une boisson : cherchez-le ci-dessous ou touchez un de vos habituels.</p>
+    <div class="search">
+      <label for="f-search" class="quick-label">Saisir un plat ou une boisson</label>
+      <div class="search-row">
+        <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Tapez le nom : steak-frites, Coca…">
+        <button type="button" id="btn-add" class="btn-add">Ajouter</button>
+      </div>
+    </div>
+    <div class="results" id="results" hidden></div>
+    <div id="quick-zone" style="display:grid;gap:8px">
+      <div class="quick-label" id="quick-label">Suggestions</div>
+      <div id="quick" class="chips" aria-labelledby="quick-label"></div>
+      <button type="button" class="btn-link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
+    </div>
+    <div id="browse" hidden style="display:grid;gap:12px"></div>
+  </section>
+
+  <section class="card memo" id="memo" hidden aria-labelledby="s-memo">
+    <h3 id="s-memo">Les fois précédentes</h3>
+    <div id="memo-body" style="display:grid;gap:12px"></div>
+    <p class="memo-note">Rappel de vos propres notes. Cette application ne calcule pas de dose.</p>
+  </section>
+
+  <section class="card" aria-labelledby="s-units">
+    <div class="step"><span id="s-units">4 · Insuline injectée</span></div>
+    <div class="dose">
+      <button type="button" id="u-minus" aria-label="Retirer une demi-unité">−</button>
+      <input id="f-units" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="0" aria-labelledby="s-units" class="num">
+      <span class="u">unités</span>
+      <button type="button" id="u-plus" aria-label="Ajouter une demi-unité">+</button>
+    </div>
+    <div class="when-row"><label for="f-when" class="muted">Heure du repas</label><input id="f-when" type="datetime-local"></div>
+    <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
+    <button type="button" class="btn-primary" id="btn-save">Enregistrer</button>
+  </section>
+</main>
+
+<main id="view-journal" hidden>
+  <input id="j-search" type="search" placeholder="Rechercher dans le journal…" aria-label="Rechercher dans le journal">
+  <div id="journal" style="display:grid;gap:12px"></div>
+</main>
+
+<main id="view-reglages" hidden>
+  <section class="card">
+    <div class="settings-row">
+      <label for="s-unit">Unité de glycémie</label>
+      <select id="s-unit"><option value="gl">g/L</option><option value="mg">mg/dL</option><option value="mmol">mmol/L</option></select>
+    </div>
+  </section>
+  <section class="card">
+    <h3>Reconnaissance des plats</h3>
+    <p class="notice">L'analyse des photos se fait sur ce téléphone : les photos ne sont jamais envoyées. Le module d'IA (environ 70 Mo) se télécharge une seule fois, à la première photo. Vous pouvez le télécharger maintenant, de préférence en Wi-Fi.</p>
+    <div class="btn-row"><button type="button" id="btn-model">Télécharger maintenant</button></div>
+    <p class="notice" id="model-info" role="status"></p>
+  </section>
+  <section class="card">
+    <h3>Sauvegarde</h3>
+    <p class="notice">Vos notes restent uniquement sur ce téléphone. Faites une sauvegarde de temps en temps et gardez le fichier en lieu sûr (Drive, mail…) : si le téléphone est perdu ou réinitialisé, c'est elle qui permet de tout récupérer.</p>
+    <div class="btn-row">
+      <button type="button" id="btn-backup">Sauvegarder (fichier)</button>
+      <button type="button" id="btn-restore">Restaurer une sauvegarde</button>
+      <input type="file" id="f-restore" accept="application/json,.json" hidden>
+      <button type="button" id="btn-csv">Exporter pour le médecin (CSV)</button>
+    </div>
+    <p class="notice num" id="storage-info"></p>
+  </section>
+  <section class="card">
+    <h3>Effacer toutes les données</h3>
+    <div id="wipe-zone"><button type="button" class="btn-danger" id="btn-wipe">Tout effacer…</button></div>
+  </section>
+  <p class="notice">Mémo insuline · prototype. Un carnet personnel : il ne calcule aucune dose et ne remplace pas l'avis de votre médecin.</p>
+</main>
+
+<nav class="tabs" aria-label="Navigation">
+  <button type="button" data-view="repas" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Repas</button>
+  <button type="button" data-view="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg>Journal</button>
+  <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+</nav>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<dialog id="viewer"><img id="viewer-img" alt="Photo du repas"><button type="button" id="viewer-close">Fermer</button></dialog>
+
+<script src="catalogue.js"></script>
+<script src="photos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
