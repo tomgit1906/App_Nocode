@@ -153,6 +153,18 @@ section { min-width: 0; }
 .thumb { width: 52px; height: 52px; border: 0; padding: 0; border-radius: 14px; overflow: hidden; background: var(--soft); cursor: zoom-in; flex: none; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* ---------- menus dépliants ---------- */
+.fold-sum { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 16px; font-weight: 800; min-height: 44px; }
+.fold-sum::-webkit-details-marker { display: none; }
+.fold-sum::after { content: ""; width: 9px; height: 9px; margin-left: auto; border-right: 2.5px solid var(--muted); border-bottom: 2.5px solid var(--muted); transform: rotate(45deg); flex: none; margin-right: 6px; }
+.fold[open] > .fold-sum::after { transform: rotate(-135deg); }
+.fold-val { font-weight: 600; color: var(--muted); }
+.add-sum { border: 2px dashed var(--dash); border-radius: 18px; padding: 10px 14px; color: var(--accent); }
+.add-sum svg { width: 20px; height: 20px; flex: none; }
+.fold[open] > .add-sum { border-style: solid; border-color: var(--line); }
+.fold-body { display: grid; gap: 14px; padding-top: 14px; min-width: 0; }
+.more { padding-top: 10px; padding-bottom: 10px; }
+
 /* ---------- heure et note ---------- */
 .when-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 16px; font-weight: 700; }
 .more input, .more textarea { border: 2px solid var(--line); background: var(--card); border-radius: 16px; padding: 11px 13px; font-size: 16px; }
@@ -255,12 +267,12 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
     </label>
 
     <section class="card" aria-labelledby="h-repas">
-      <div class="row-head">
-        <h2 id="h-repas">Mon assiette</h2>
-        <button type="button" class="link" id="btn-focus-add">+ Ajouter</button>
-      </div>
+      <h2 id="h-repas">Mon assiette</h2>
       <ul class="items" id="items"></ul>
-      <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez ci-dessous.</p>
+      <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez.</p>
+      <details class="fold" id="add-panel">
+      <summary class="fold-sum add-sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter un plat ou une boisson</span></summary>
+      <div class="fold-body">
       <div class="add-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Ajouter un plat ou une boisson" aria-label="Saisir un plat ou une boisson">
@@ -273,6 +285,8 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
         <button type="button" class="link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
       </div>
       <div id="browse" hidden style="display:grid;gap:12px"></div>
+      </div>
+      </details>
     </section>
 
     <section class="card memo" id="memo" hidden aria-labelledby="h-memo">
@@ -282,8 +296,13 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
     </section>
 
     <section class="card more" aria-label="Heure et note">
-      <div class="when-row"><label for="f-when">Heure du repas</label><input id="f-when" type="datetime-local"></div>
-      <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
+      <details class="fold" id="more-panel">
+        <summary class="fold-sum"><span>Heure et note</span><span class="fold-val num" id="when-sum"></span></summary>
+        <div class="fold-body">
+          <div class="when-row"><label for="f-when">Heure du repas</label><input id="f-when" type="datetime-local"></div>
+          <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
+        </div>
+      </details>
     </section>
 
     <section class="card" aria-labelledby="h-ins">

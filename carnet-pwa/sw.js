@@ -1,6 +1,6 @@
 // Garde tous les fichiers de l'application sur le téléphone pour qu'elle marche sans internet.
 // Changer VERSION à chaque mise à jour des fichiers.
-const VERSION = "memo-insuline-v8";
+const VERSION = "memo-insuline-v9";
 const LIBS = "memo-insuline-libs"; // bibliothèque d'IA, gardée d'une version à l'autre
 const FILES = [
   "./", "index.html", "app.js", "catalogue.js", "photos.js", "ia-worker.js", "manifest.webmanifest",

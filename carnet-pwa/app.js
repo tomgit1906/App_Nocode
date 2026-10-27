@@ -222,8 +222,7 @@
     $("f-photo").value = "";
   }
   $("photo-remove").onclick = clearPhoto;
-  $("ia-other").onclick = () => { $("f-search").focus(); $("f-search").scrollIntoView({ block: "center", behavior: "smooth" }); };
-  $("btn-focus-add").onclick = $("ia-other").onclick;
+  $("ia-other").onclick = () => { $("add-panel").open = true; $("f-search").focus(); $("f-search").scrollIntoView({ block: "center", behavior: "smooth" }); };
 
   PhotoIA.onProgress = (p) => {
     if (!p.total || !/onnx/.test(p.file || "")) return;
@@ -296,6 +295,7 @@
     current = [];
     $("f-gly").value = ""; $("f-units").value = ""; $("f-note").value = ""; $("f-search").value = "";
     $("f-when").value = nowLocal();
+    $("add-panel").open = false; $("more-panel").open = false;
     renderSearch(); renderItems(); renderMemo(); syncSave(); renderDate();
   }
 
@@ -307,10 +307,13 @@
   function renderDate() {
     const d = new Date($("f-when").value || Date.now());
     const day = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-    $("date-chip").textContent = day.charAt(0).toUpperCase() + day.slice(1) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    $("date-chip").textContent = day.charAt(0).toUpperCase() + day.slice(1) + " · " + time;
+    $("when-sum").textContent = time + ($("f-note").value.trim() ? " · note" : "");
   }
   $("f-units").addEventListener("input", syncSave);
   $("f-when").addEventListener("change", renderDate);
+  $("f-note").addEventListener("change", renderDate);
 
   // saisie manuelle : un nom connu est ajouté tout de suite, un nouveau nom demande « plat ou boisson ? »
   function addTyped() {
