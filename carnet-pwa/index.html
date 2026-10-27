@@ -4,34 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mémo insuline</title>
-<meta name="theme-color" content="#2F55C8">
+<meta name="theme-color" content="#14213D">
 <meta name="description" content="Mémo personnel : ce que j'ai mangé et bu, ma glycémie avant le repas et les unités d'insuline injectées.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-/* Mise en page : une colonne façon application mobile, barre d'onglets fixe en bas ; centrée et limitée en largeur sur ordinateur. */
+/* Ambiance « Vif » : photo du plat en grand en haut, feuille blanche arrondie par-dessus,
+   tuiles glycémie / insuline côte à côte, bouton Enregistrer toujours visible en bas. */
 :root {
-  --bg: #F3F5F7;
-  --surface: #FFFFFF;
-  --ink: #18212B;
-  --muted: #5B6773;
-  --line: #DCE2E8;
-  --accent: #2F55C8;
+  --bg: #FFFFFF;
+  --soft: #F4F6FA;
+  --ink: #14213D;
+  --muted: #5C6782;
+  --line: #E3E7EF;
+  --accent: #E2553A;
   --accent-ink: #FFFFFF;
-  --accent-soft: #E6ECFB;
-  --drink: #0F7C8A;
-  --drink-soft: #DDF1F3;
-  --danger: #B2304A;
-  --f: system-ui, "Roboto", "Segoe UI", sans-serif;
-  --r: 12px;
-  --tab-h: 64px;
+  --drink-bg: #E4F1FB;
+  --drink-btn: #C9E2F5;
+  --hero: #F3E6D8;
+  --plat-bg: #14213D;
+  --plat-fg: #FFFFFF;
+  --plat-btn: #2C3A5A;
+  --danger: #B42318;
+  --f: "Plus Jakarta Sans", system-ui, "Roboto", "Segoe UI", sans-serif;
+  --bottom-h: 132px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg: #11161C; --surface: #1A222B; --ink: #E8EDF2; --muted: #9AA7B4; --line: #2B3641;
-  --accent: #8AA6FF; --accent-ink: #0E1530; --accent-soft: #212E4E;
-  --drink: #63CAD6; --drink-soft: #15343A; --danger: #FF8FA5;
+  --bg: #0E1626; --soft: #172238; --ink: #EEF2F8; --muted: #A3AEC4; --line: #2A3650;
+  --accent: #FF7A5C; --accent-ink: #1A0E0A;
+  --drink-bg: #1C3550; --drink-btn: #28496B; --hero: #2A2420;
+  --plat-bg: #EEF2F8; --plat-fg: #14213D; --plat-btn: #C9D2E3; --danger: #FF8A80;
   color-scheme: dark; } }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -39,248 +45,296 @@
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 16px; line-height: 1.45; }
 .num { font-variant-numeric: tabular-nums; }
-.muted { color: var(--muted); }
-h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+h1, h2, h3 { margin: 0; line-height: 1.1; text-wrap: balance; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.gutter { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 560px; margin: 0 auto; }
 
-header.app { position: sticky; top: 0; z-index: 5; background: var(--accent); color: var(--accent-ink);
-  padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
-header.app h1 { font-size: 20px; font-weight: 800; max-width: 640px; margin: 0 auto; }
+/* ---------- photo en haut ---------- */
+.hero { position: relative; height: 300px; background: var(--hero); overflow: hidden; }
+.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; cursor: pointer; text-align: center; padding: 60px 24px 50px; }
+.hero-empty .cam { width: 84px; height: 84px; border-radius: 42px; background: var(--ink); color: var(--bg); display: grid; place-items: center; }
+.hero-empty .cam svg { width: 38px; height: 38px; }
+.hero-empty strong { font-size: 20px; font-weight: 800; color: #14213D; }
+.hero-empty span { font-size: 14px; color: #4A3B2C; }
+.hero-top { position: absolute; left: 0; right: 0; top: 0; padding-top: calc(16px + env(safe-area-inset-top, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.date-chip { background: #FFFFFF; color: #14213D; border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 700; }
+.hero-btn { background: #14213D; color: #FFFFFF; border: 0; border-radius: 999px; padding: 10px 16px; font-size: 14px; font-weight: 700; display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.hero-btn svg { width: 18px; height: 18px; }
 
-main { max-width: 640px; margin: 0 auto; padding-block: 16px calc(var(--tab-h) + 32px + env(safe-area-inset-bottom, 0px));
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+/* ---------- feuille ---------- */
+.sheet { margin-top: -36px; position: relative; background: var(--bg); border-radius: 32px 32px 0 0; padding-top: 24px; padding-bottom: calc(var(--bottom-h) + 32px + env(safe-area-inset-bottom, 0px)); }
+.sheet .wrap { display: grid; gap: 26px; }
+.page { padding-top: calc(28px + env(safe-area-inset-top, 0px)); padding-bottom: calc(var(--bottom-h) + 32px + env(safe-area-inset-bottom, 0px)); }
+.page .wrap { display: grid; gap: 18px; }
+.page h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
+section { display: grid; gap: 12px; min-width: 0; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.row-head h2 { font-size: 18px; font-weight: 800; }
+.link { border: 0; background: none; padding: 6px 0; color: var(--accent); font-weight: 700; font-size: 15px; }
+.link-muted { border: 0; background: none; padding: 4px 0; color: var(--muted); font-size: 14px; text-decoration: underline; justify-self: start; }
+.note-txt { font-size: 14px; color: var(--muted); margin: 0; }
 
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
-.step { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.step .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+/* ---------- IA ---------- */
+.ia h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.btn-accent { border: 0; border-radius: 16px; padding: 15px; background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 800; }
+.btn-outline { border: 2px solid var(--line); border-radius: 16px; padding: 13px; background: var(--bg); color: var(--ink); font-size: 16px; font-weight: 700; }
+.ia-alts { margin: 0; font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ia-alts button { border: 0; background: var(--soft); border-radius: 999px; padding: 6px 12px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.ia-status { margin: 0; font-size: 15px; color: var(--muted); }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); display: inline-block; vertical-align: -3px; margin-right: 8px; }
+@media (prefers-reduced-motion: no-preference) { .spinner { animation: spin 0.9s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } }
 
-input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 100%; min-width: 0; }
-textarea { resize: vertical; min-height: 56px; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-button { font: inherit; cursor: pointer; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 15px; font-size: 17px; width: 100%; }
-.btn-link { border: 0; background: none; color: var(--accent); padding: 6px 0; font-weight: 600; }
-.btn-danger { color: var(--danger); }
+/* ---------- mon repas ---------- */
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.item { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 6px 6px 16px; font-size: 16px; font-weight: 700; max-width: 100%; }
+.item.plat { background: var(--plat-bg); color: var(--plat-fg); }
+.item.boisson { background: var(--drink-bg); color: var(--ink); }
+.item .nm { overflow-wrap: anywhere; }
+.item select { border: 0; background: transparent; font-size: 15px; font-weight: 600; color: inherit; padding: 4px 0; max-width: 150px; }
+.item .rm { border: 0; width: 32px; height: 32px; border-radius: 16px; font-size: 18px; line-height: 1; flex: none; }
+.item.plat .rm { background: var(--plat-btn); color: var(--plat-fg); }
+.item.boisson .rm { background: var(--drink-btn); color: var(--ink); }
+.empty-list { margin: 0; color: var(--muted); font-size: 15px; }
 
-/* glycémie */
-.gly { display: flex; align-items: center; gap: 10px; }
-.gly input { font-size: 30px; font-weight: 800; text-align: center; padding: 8px; flex: 1; }
-.gly .u { font-size: 16px; color: var(--muted); min-width: 56px; }
-
-/* recherche aliments */
-.search { position: relative; display: grid; gap: 6px; }
 .search-row { display: flex; gap: 8px; }
-.search-row input { flex: 1; }
-.btn-add { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 0 16px; }
-.btn-add:disabled { opacity: 0.45; cursor: default; }
-.results { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
-.results button { border: 0; border-radius: 0; border-bottom: 1px solid var(--line); text-align: left; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px; background: var(--surface); }
-.results button:last-child { border-bottom: 0; }
-.results .add-new { display: grid; gap: 8px; padding: 12px; }
-.results .add-new .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.results .add-new .two button { border: 1px solid var(--line); border-radius: 10px; justify-content: center; }
-.tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
-.tag.plat { background: var(--accent-soft); color: var(--accent); }
-.tag.boisson { background: var(--drink-soft); color: var(--drink); }
+.search-row input { flex: 1; min-width: 0; border: 2px solid var(--line); background: var(--bg); border-radius: 16px; padding: 12px 14px; font-size: 16px; }
+.search-row input:focus { border-color: var(--ink); outline: none; }
+.btn-add { border: 0; border-radius: 16px; padding: 0 18px; background: var(--ink); color: var(--bg); font-weight: 800; }
+.btn-add:disabled { opacity: 0.35; cursor: default; }
+.results { display: grid; border: 2px solid var(--line); border-radius: 16px; overflow: hidden; }
+.results > button { border: 0; border-bottom: 1px solid var(--line); background: var(--bg); text-align: left; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 13px 14px; font-size: 16px; }
+.results > button:last-child { border-bottom: 0; }
+.add-new { display: grid; gap: 8px; padding: 14px; background: var(--soft); border-bottom: 1px solid var(--line); font-weight: 600; }
+.add-new .two button { border: 2px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px; font-weight: 700; }
+.tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 9px; white-space: nowrap; background: var(--soft); color: var(--muted); }
+.quick-label { font-size: 14px; font-weight: 700; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { border-radius: 999px; padding: 7px 12px; font-size: 15px; }
-.chip.boisson { border-color: var(--drink); color: var(--drink); }
-.photo-btn { display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px dashed var(--accent); color: var(--accent); background: var(--accent-soft);
-  border-radius: var(--r); padding: 20px; font-weight: 700; font-size: 17px; cursor: pointer; }
-.photo-btn svg { width: 28px; height: 28px; }
-.photo-preview { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: start; }
-.photo-preview img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: block; background: var(--bg); }
-.photo-side { display: grid; gap: 10px; min-width: 0; }
-.ia-status { margin: 0; font-size: 15px; }
-.btn-small { font-size: 14px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; display: inline-block; }
-.ia-props { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--accent-soft); }
-.chip.ia { font-weight: 700; background: var(--surface); }
-.chip .mine { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 4px; }
-.thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: var(--bg); border: 0; padding: 0; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block; }
-.memo-row.has-photo { grid-template-columns: 56px minmax(0, 1fr) auto; }
-.memo-row.has-photo .thumb { grid-row: span 2; }
+.chip { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 13px; font-size: 15px; font-weight: 600; }
+.chip.boisson { background: var(--drink-bg); border-color: var(--drink-bg); }
+
+/* ---------- tuiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { border-radius: 22px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.tile.gly { background: var(--soft); }
+.tile.ins { background: var(--accent); color: var(--accent-ink); }
+.tile .lbl { font-size: 14px; font-weight: 700; }
+.tile.gly .lbl { color: var(--muted); }
+.gly-in { display: flex; align-items: baseline; gap: 4px; }
+.gly-in input { width: 100%; min-width: 0; border: 0; background: transparent; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0; color: var(--ink); }
+.gly-in input::placeholder { color: var(--muted); opacity: 0.6; }
+.gly-in span { font-size: 15px; font-weight: 600; color: var(--muted); }
+.dose { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; }
+.dose button { width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--bg); color: var(--accent); font-size: 24px; font-weight: 800; }
+.dose input { width: 100%; min-width: 0; border: 0; background: transparent; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; padding: 0; color: var(--accent-ink); }
+.dose input::placeholder { color: var(--accent-ink); opacity: 0.6; }
+@media (max-width: 360px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+
+.more { display: grid; gap: 10px; }
+.more .when-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; color: var(--muted); }
+.more input, .more textarea { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 13px; font-size: 16px; }
+.more input { flex: 1 1 180px; }
+.more textarea { width: 100%; resize: vertical; min-height: 54px; }
+
+/* ---------- fois précédentes ---------- */
+.timeline { display: grid; border-left: 3px solid var(--line); margin-left: 6px; padding-left: 16px; }
+.tl-group { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 8px 0 2px; }
+.tl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 0; }
+.tl-row.has-photo { grid-template-columns: 52px minmax(0, 1fr) auto; }
+.tl-row .d { font-size: 16px; font-weight: 700; }
+.tl-row .s { font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.tl-row .u { font-size: 22px; font-weight: 800; white-space: nowrap; }
+.thumb { width: 52px; height: 52px; border: 0; padding: 0; border-radius: 12px; overflow: hidden; background: var(--soft); cursor: zoom-in; flex: none; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- barre du bas ---------- */
+.bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--bg); border-top: 1px solid var(--line);
+  padding-top: 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.bottom .wrap { display: grid; gap: 8px; }
+.btn-save { border: 0; border-radius: 16px; padding: 17px; background: var(--ink); color: var(--bg); font-size: 17px; font-weight: 800; width: 100%; }
+nav.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+nav.tabs button { border: 0; background: none; padding: 8px 4px; font-size: 14px; font-weight: 600; color: var(--muted); display: grid; justify-items: center; gap: 2px; }
+nav.tabs button svg { width: 22px; height: 22px; }
+nav.tabs button[aria-current="page"] { color: var(--accent); font-weight: 800; }
+
+/* ---------- journal ---------- */
+.search-big { border: 2px solid var(--line); background: var(--bg); border-radius: 16px; padding: 12px 14px; font-size: 16px; width: 100%; }
+.day-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+.entry { background: var(--soft); border-radius: 22px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; }
+.entry .top { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.entry .t { font-size: 14px; font-weight: 700; color: var(--muted); }
+.entry .its { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pill { font-size: 14px; font-weight: 700; border-radius: 999px; padding: 4px 11px; }
+.pill.plat { background: var(--plat-bg); color: var(--plat-fg); }
+.pill.boisson { background: var(--drink-bg); color: var(--ink); }
+.entry .meta { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.entry .note { font-size: 14px; color: var(--muted); font-style: italic; margin-top: 4px; overflow-wrap: anywhere; }
+.entry .u { font-size: 28px; font-weight: 800; text-align: right; line-height: 1; }
+.entry .u small { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+.entry .acts { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 14px; }
+.entry .acts button { border: 2px solid var(--line); background: var(--bg); border-radius: 12px; padding: 7px 12px; font-size: 14px; font-weight: 700; }
+.entry .acts .btn-danger { color: var(--danger); }
+.empty { text-align: center; color: var(--muted); padding: 40px 8px; margin: 0; }
+
+/* ---------- réglages ---------- */
+.card { background: var(--soft); border-radius: 22px; padding: 18px; display: grid; gap: 12px; }
+.card h2 { font-size: 18px; font-weight: 800; }
+.card select { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 13px; font-size: 16px; }
+.card label { font-weight: 700; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-row button, #wipe-zone button { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 14px; font-weight: 700; }
+.btn-danger { color: var(--danger); }
+.notice { font-size: 14px; color: var(--muted); margin: 0; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--bottom-h) + 16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 14px; font-size: 15px; font-weight: 600; max-width: calc(100vw - 32px); }
 #viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 92vh; }
 #viewer::backdrop { background: rgba(0, 0, 0, 0.85); }
-#viewer img { max-width: 96vw; max-height: 82vh; display: block; border-radius: 10px; }
-#viewer button { margin: 10px auto 0; display: block; }
-.quick-label, .browse-cat { font-size: 13px; font-weight: 700; color: var(--muted); }
-
-/* liste du repas */
-.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.items li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--bg); border-radius: 10px; padding: 8px 8px 8px 12px; }
-.items li .name { font-weight: 700; overflow-wrap: anywhere; }
-.items li select { padding: 6px 8px; width: auto; margin-top: 4px; font-size: 14px; }
-.items li .rm { border: 0; background: none; font-size: 22px; line-height: 1; color: var(--muted); padding: 8px 10px; }
-.empty-list { color: var(--muted); font-size: 15px; margin: 0; }
-
-/* mémo */
-.memo { background: var(--accent-soft); border-color: transparent; }
-.memo h3 { font-size: 16px; }
-.memo-group { display: grid; gap: 6px; }
-.memo-group .lbl { font-size: 13px; color: var(--muted); font-weight: 700; }
-.memo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; background: var(--surface); border-radius: 10px; padding: 10px 12px; }
-.memo-row .when { font-size: 13px; color: var(--muted); }
-.memo-row .what { font-size: 14px; overflow-wrap: anywhere; }
-.memo-row .u { font-size: 24px; font-weight: 800; text-align: right; grid-row: span 2; }
-.memo-row .u small { font-size: 12px; font-weight: 400; color: var(--muted); display: block; }
-.memo-note { font-size: 13px; color: var(--muted); margin: 0; }
-
-/* unités */
-.dose { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
-.dose button { border: 0; border-radius: 0; background: transparent; width: 64px; font-size: 28px; color: var(--accent); }
-.dose input { border: 0; border-radius: 0; text-align: center; font-size: 34px; font-weight: 800; background: transparent; padding: 6px; }
-.dose .u { align-self: center; padding-right: 4px; color: var(--muted); }
-.when-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; }
-.when-row input { width: auto; flex: 1 1 200px; }
-
-/* journal */
-.day-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 8px 0 -4px; }
-.entry { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; }
-.entry .t { color: var(--muted); font-size: 14px; padding-top: 2px; }
-.entry .its { display: flex; flex-wrap: wrap; gap: 6px; }
-.entry .meta { font-size: 14px; color: var(--muted); margin-top: 4px; }
-.entry .u { font-size: 26px; font-weight: 800; text-align: right; line-height: 1.1; }
-.entry .u small { font-size: 12px; font-weight: 400; color: var(--muted); display: block; }
-.entry .note { font-size: 14px; color: var(--muted); font-style: italic; margin-top: 4px; overflow-wrap: anywhere; }
-.entry .acts { grid-column: 2 / -1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; font-size: 14px; flex-wrap: wrap; }
-.entry .acts button { padding: 6px 10px; font-size: 14px; }
-.pill { font-size: 13px; border-radius: 999px; padding: 2px 9px; background: var(--bg); border: 1px solid var(--line); }
-.pill.boisson { color: var(--drink); border-color: var(--drink-soft); background: var(--drink-soft); }
-.pill.plat { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
-.empty { text-align: center; color: var(--muted); padding: 32px 8px; }
-
-/* onglets */
-nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 max(0px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(0px, env(safe-area-inset-left, 0px)); }
-nav.tabs button { border: 0; border-radius: 0; background: none; height: var(--tab-h); font-size: 14px; font-weight: 600; color: var(--muted); display: grid; place-items: center; gap: 0; padding: 6px; }
-nav.tabs button svg { width: 24px; height: 24px; }
-nav.tabs button[aria-current="page"] { color: var(--accent); }
-
-.notice { font-size: 13px; color: var(--muted); margin: 0; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tab-h) + 16px + env(safe-area-inset-bottom, 0px)); z-index: 10;
-  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 15px; max-width: calc(100vw - 32px); }
-.settings-row { display: grid; gap: 6px; }
-.settings-row label { font-weight: 700; }
-.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+#viewer img { max-width: 96vw; max-height: 82vh; display: block; border-radius: 14px; }
+#viewer button { margin: 12px auto 0; display: block; border: 0; border-radius: 12px; padding: 10px 18px; font-weight: 700; background: #FFFFFF; color: #14213D; }
 </style>
 </head>
 <body>
-<header class="app"><h1 id="view-title">Nouveau repas</h1></header>
 
 <main id="view-repas">
-  <section class="card" aria-labelledby="s-photo">
-    <div class="step"><span id="s-photo">1 · Photo du repas</span><span class="opt">facultatif</span></div>
-    <label class="photo-btn" id="photo-btn" for="f-photo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-      Prendre en photo
+  <div class="hero" id="hero">
+    <img id="photo-img" alt="Photo du repas" hidden>
+    <label class="hero-empty" id="photo-btn" for="f-photo">
+      <span class="cam" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      <strong>Prendre mon repas en photo</strong>
+      <span>Facultatif · l'IA reconnaît le plat, sur votre téléphone</span>
     </label>
-    <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
-    <div class="photo-preview" id="photo-preview" hidden>
-      <img id="photo-img" alt="Photo du repas">
-      <div class="photo-side">
-        <p class="ia-status" id="ia-status" role="status"></p>
-        <div class="btn-row">
-          <label class="btn-small" for="f-photo">Reprendre</label>
-          <button type="button" class="btn-small" id="photo-remove">Retirer</button>
+    <div class="hero-top gutter">
+      <span class="date-chip num" id="date-chip"></span>
+      <label class="hero-btn" id="photo-retake" for="f-photo" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        Reprendre
+      </label>
+    </div>
+  </div>
+  <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
+
+  <div class="sheet gutter">
+    <div class="wrap">
+      <section class="ia" id="ia-zone" hidden aria-live="polite">
+        <span class="eyebrow" id="ia-eyebrow">Analyse de la photo</span>
+        <h1 id="ia-question" hidden></h1>
+        <div class="two" id="ia-buttons" hidden>
+          <button type="button" class="btn-accent" id="ia-yes">Oui, c'est ça</button>
+          <button type="button" class="btn-outline" id="ia-other">Autre plat…</button>
         </div>
-      </div>
-    </div>
-  </section>
+        <p class="ia-alts" id="ia-alts" hidden></p>
+        <p class="ia-status" id="ia-status"></p>
+        <button type="button" class="link-muted" id="photo-remove">Retirer la photo</button>
+      </section>
 
-  <section class="card" aria-labelledby="s-gly">
-    <div class="step"><span id="s-gly">2 · Glycémie avant le repas</span><span class="opt">facultatif</span></div>
-    <div class="gly">
-      <input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-labelledby="s-gly" class="num">
-      <span class="u u-label">g/L</span>
-    </div>
-  </section>
+      <section aria-labelledby="h-repas">
+        <div class="row-head">
+          <h2 id="h-repas">Mon repas</h2>
+          <button type="button" class="link" id="btn-focus-add">+ Ajouter</button>
+        </div>
+        <ul class="items" id="items"></ul>
+        <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez ci-dessous.</p>
+        <div style="display:grid;gap:6px">
+          <label for="f-search" class="quick-label">Saisir un plat ou une boisson</label>
+          <div class="search-row">
+            <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Tapez le nom : steak-frites, Coca…">
+            <button type="button" id="btn-add" class="btn-add">Ajouter</button>
+          </div>
+        </div>
+        <div class="results" id="results" hidden></div>
+        <div id="quick-zone" style="display:grid;gap:8px">
+          <div class="quick-label" id="quick-label">Suggestions</div>
+          <div id="quick" class="chips" aria-labelledby="quick-label"></div>
+          <button type="button" class="link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
+        </div>
+        <div id="browse" hidden style="display:grid;gap:12px"></div>
+      </section>
 
-  <section class="card" aria-labelledby="s-items">
-    <div class="step"><span id="s-items">3 · Ce que je mange et bois</span></div>
-    <div class="ia-props" id="ia-props" hidden>
-      <div class="quick-label">D'après la photo, c'est peut-être :</div>
-      <div class="chips" id="ia-chips"></div>
-      <p class="memo-note">Touchez le bon choix. Sinon, cherchez-le ou tapez son nom ci-dessous : l'application s'en souviendra.</p>
-    </div>
-    <ul class="items" id="items"></ul>
-    <p class="empty-list" id="items-empty">Ajoutez un plat ou une boisson : cherchez-le ci-dessous ou touchez un de vos habituels.</p>
-    <div class="search">
-      <label for="f-search" class="quick-label">Saisir un plat ou une boisson</label>
-      <div class="search-row">
-        <input id="f-search" type="search" autocomplete="off" enterkeyhint="done" placeholder="Tapez le nom : steak-frites, Coca…">
-        <button type="button" id="btn-add" class="btn-add">Ajouter</button>
-      </div>
-    </div>
-    <div class="results" id="results" hidden></div>
-    <div id="quick-zone" style="display:grid;gap:8px">
-      <div class="quick-label" id="quick-label">Suggestions</div>
-      <div id="quick" class="chips" aria-labelledby="quick-label"></div>
-      <button type="button" class="btn-link" id="btn-browse" style="justify-self:start">Voir toute la liste</button>
-    </div>
-    <div id="browse" hidden style="display:grid;gap:12px"></div>
-  </section>
+      <section class="tiles" aria-label="Glycémie et insuline">
+        <label class="tile gly" for="f-gly">
+          <span class="lbl">Glycémie avant</span>
+          <span class="gly-in"><input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" class="num"><span class="u-label">g/L</span></span>
+        </label>
+        <div class="tile ins">
+          <label class="lbl" for="f-units">Insuline (unités)</label>
+          <div class="dose">
+            <button type="button" id="u-minus" aria-label="Retirer une demi-unité">−</button>
+            <input id="f-units" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="num">
+            <button type="button" id="u-plus" aria-label="Ajouter une demi-unité">+</button>
+          </div>
+        </div>
+      </section>
 
-  <section class="card memo" id="memo" hidden aria-labelledby="s-memo">
-    <h3 id="s-memo">Les fois précédentes</h3>
-    <div id="memo-body" style="display:grid;gap:12px"></div>
-    <p class="memo-note">Rappel de vos propres notes. Cette application ne calcule pas de dose.</p>
-  </section>
+      <section id="memo" hidden aria-labelledby="h-memo">
+        <h2 id="h-memo" style="font-size:18px;font-weight:800">Les fois précédentes</h2>
+        <div class="timeline" id="memo-body"></div>
+        <p class="note-txt">Vos propres notes. L'application ne calcule pas de dose.</p>
+      </section>
 
-  <section class="card" aria-labelledby="s-units">
-    <div class="step"><span id="s-units">4 · Insuline injectée</span></div>
-    <div class="dose">
-      <button type="button" id="u-minus" aria-label="Retirer une demi-unité">−</button>
-      <input id="f-units" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="0" aria-labelledby="s-units" class="num">
-      <span class="u">unités</span>
-      <button type="button" id="u-plus" aria-label="Ajouter une demi-unité">+</button>
+      <section class="more" aria-label="Heure et note">
+        <div class="when-row"><label for="f-when">Heure du repas</label><input id="f-when" type="datetime-local"></div>
+        <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
+      </section>
     </div>
-    <div class="when-row"><label for="f-when" class="muted">Heure du repas</label><input id="f-when" type="datetime-local"></div>
-    <textarea id="f-note" maxlength="300" placeholder="Note (facultatif) : grosse portion, sport après, apéro…" aria-label="Note"></textarea>
-    <button type="button" class="btn-primary" id="btn-save">Enregistrer</button>
-  </section>
+  </div>
 </main>
 
-<main id="view-journal" hidden>
-  <input id="j-search" type="search" placeholder="Rechercher dans le journal…" aria-label="Rechercher dans le journal">
-  <div id="journal" style="display:grid;gap:12px"></div>
+<main id="view-journal" class="page gutter" hidden>
+  <div class="wrap">
+    <h1>Journal</h1>
+    <input id="j-search" class="search-big" type="search" placeholder="Rechercher dans le journal…" aria-label="Rechercher dans le journal">
+    <div id="journal" style="display:grid;gap:12px"></div>
+  </div>
 </main>
 
-<main id="view-reglages" hidden>
-  <section class="card">
-    <div class="settings-row">
+<main id="view-reglages" class="page gutter" hidden>
+  <div class="wrap">
+    <h1>Réglages</h1>
+    <section class="card">
       <label for="s-unit">Unité de glycémie</label>
       <select id="s-unit"><option value="gl">g/L</option><option value="mg">mg/dL</option><option value="mmol">mmol/L</option></select>
-    </div>
-  </section>
-  <section class="card">
-    <h3>Reconnaissance des plats</h3>
-    <p class="notice">L'analyse des photos se fait sur ce téléphone : les photos ne sont jamais envoyées. Le module d'IA (environ 70 Mo) se télécharge une seule fois, à la première photo. Vous pouvez le télécharger maintenant, de préférence en Wi-Fi.</p>
-    <div class="btn-row"><button type="button" id="btn-model">Télécharger maintenant</button></div>
-    <p class="notice" id="model-info" role="status"></p>
-  </section>
-  <section class="card">
-    <h3>Sauvegarde</h3>
-    <p class="notice">Vos notes restent uniquement sur ce téléphone. Faites une sauvegarde de temps en temps et gardez le fichier en lieu sûr (Drive, mail…) : si le téléphone est perdu ou réinitialisé, c'est elle qui permet de tout récupérer.</p>
-    <div class="btn-row">
-      <button type="button" id="btn-backup">Sauvegarder (fichier)</button>
-      <button type="button" id="btn-restore">Restaurer une sauvegarde</button>
-      <input type="file" id="f-restore" accept="application/json,.json" hidden>
-      <button type="button" id="btn-csv">Exporter pour le médecin (CSV)</button>
-    </div>
-    <p class="notice num" id="storage-info"></p>
-  </section>
-  <section class="card">
-    <h3>Effacer toutes les données</h3>
-    <div id="wipe-zone"><button type="button" class="btn-danger" id="btn-wipe">Tout effacer…</button></div>
-  </section>
-  <p class="notice">Mémo insuline · prototype. Un carnet personnel : il ne calcule aucune dose et ne remplace pas l'avis de votre médecin.</p>
+    </section>
+    <section class="card">
+      <h2>Reconnaissance des plats</h2>
+      <p class="notice">L'analyse des photos se fait sur ce téléphone : les photos ne sont jamais envoyées. Le module d'IA (environ 70 Mo) se télécharge une seule fois, à la première photo. Vous pouvez le télécharger maintenant, de préférence en Wi-Fi.</p>
+      <div class="btn-row"><button type="button" id="btn-model">Télécharger maintenant</button></div>
+      <p class="notice" id="model-info" role="status"></p>
+    </section>
+    <section class="card">
+      <h2>Sauvegarde</h2>
+      <p class="notice">Vos notes restent uniquement sur ce téléphone. Faites une sauvegarde de temps en temps et gardez le fichier en lieu sûr (Drive, mail…) : si le téléphone est perdu ou réinitialisé, c'est elle qui permet de tout récupérer.</p>
+      <div class="btn-row">
+        <button type="button" id="btn-backup">Sauvegarder (fichier)</button>
+        <button type="button" id="btn-restore">Restaurer une sauvegarde</button>
+        <input type="file" id="f-restore" accept="application/json,.json" hidden>
+        <button type="button" id="btn-csv">Exporter pour le médecin (CSV)</button>
+      </div>
+      <p class="notice num" id="storage-info"></p>
+    </section>
+    <section class="card">
+      <h2>Effacer toutes les données</h2>
+      <div id="wipe-zone"><button type="button" class="btn-danger" id="btn-wipe">Tout effacer…</button></div>
+    </section>
+    <p class="notice">Mémo insuline · prototype. Un carnet personnel : il ne calcule aucune dose et ne remplace pas l'avis de votre médecin.</p>
+  </div>
 </main>
 
-<nav class="tabs" aria-label="Navigation">
-  <button type="button" data-view="repas" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Repas</button>
-  <button type="button" data-view="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg>Journal</button>
-  <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
-</nav>
+<div class="bottom gutter">
+  <div class="wrap">
+    <button type="button" class="btn-save" id="btn-save">Enregistrer</button>
+    <nav class="tabs" aria-label="Navigation">
+      <button type="button" data-view="repas" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Repas</button>
+      <button type="button" data-view="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg>Journal</button>
+      <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+    </nav>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" hidden></div>
 

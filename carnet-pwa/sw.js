@@ -1,6 +1,6 @@
 // Garde tous les fichiers de l'application sur le téléphone pour qu'elle marche sans internet.
 // Changer VERSION à chaque mise à jour des fichiers.
-const VERSION = "memo-insuline-v5";
+const VERSION = "memo-insuline-v6";
 const LIBS = "memo-insuline-libs"; // bibliothèque d'IA, gardée d'une version à l'autre
 const FILES = [
   "./", "index.html", "app.js", "catalogue.js", "photos.js", "ia-worker.js", "manifest.webmanifest",
@@ -18,9 +18,9 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  // Bibliothèque d'IA (CDN) : téléchargée une fois puis servie depuis le téléphone.
+  // Bibliothèque d'IA (CDN) et police (Google Fonts) : téléchargées une fois puis servies depuis le téléphone.
   // Les fichiers du modèle sont gardés à part par la bibliothèque elle-même.
-  if (url.hostname === "cdn.jsdelivr.net") {
+  if (url.hostname === "cdn.jsdelivr.net" || url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
     e.respondWith(caches.open(LIBS).then(async (c) => {
       const hit = await c.match(e.request);
       if (hit) return hit;

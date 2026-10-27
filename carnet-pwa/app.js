@@ -84,19 +84,19 @@
   function renderItems() {
     const ul = $("items");
     ul.replaceChildren(...current.map((it, i) => {
-      const left = el("span", { className: "tag " + it.cat, textContent: it.cat === "boisson" ? "Boisson" : "Plat" });
-      const mid = el("div", {}, el("div", { className: "name", textContent: it.name }));
+      const li = el("li", { className: "item " + it.cat }, el("span", { className: "nm", textContent: it.name }));
       if (it.cat === "boisson") {
         const sel = el("select");
         sel.setAttribute("aria-label", "Quantité de " + it.name);
-        window.TAILLES.forEach(t => sel.append(el("option", { value: t, textContent: t, selected: t === it.size })));
+        window.TAILLES.forEach(t => sel.append(el("option", { value: t, textContent: "· " + t.toLowerCase(), selected: t === it.size })));
         sel.onchange = () => { it.size = sel.value; renderMemo(); };
-        mid.append(sel);
+        li.append(sel);
       }
       const rm = el("button", { type: "button", className: "rm", textContent: "×" });
       rm.setAttribute("aria-label", "Retirer " + it.name);
       rm.onclick = () => { current.splice(i, 1); renderItems(); renderMemo(); renderQuick(); };
-      return el("li", {}, left, mid, rm);
+      li.append(rm);
+      return li;
     }));
     $("items-empty").hidden = current.length > 0;
     renderQuick();
@@ -174,12 +174,14 @@
   $("viewer").addEventListener("click", (ev) => { if (ev.target === $("viewer")) $("viewer").close(); });
 
   function memoRow(e) {
-    const row = el("div", { className: "memo-row" + (e.photoId ? " has-photo" : "") });
+    const row = el("div", { className: "tl-row" + (e.photoId ? " has-photo" : "") });
     if (e.photoId) row.append(thumb(e.photoId));
+    const gly = e.gly != null ? "Glycémie " + fmtGly(e.gly) + " " + UNIT[data.settings.unit] : "Glycémie non notée";
     row.append(
-      el("div", { className: "when num", textContent: fmtWhen(e.at) + " · glycémie " + fmtGly(e.gly) + (e.gly != null ? " " + UNIT[data.settings.unit] : "") }),
-      el("div", { className: "u num" }, document.createTextNode(fmtUnits(e.units)), el("small", { textContent: "unités" })),
-      el("div", { className: "what", textContent: e.items.map(itemLabel).join(" + ") + (e.note ? " — " + e.note : "") }));
+      el("div", { style: "display:grid;min-width:0" },
+        el("span", { className: "d num", textContent: fmtWhen(e.at) }),
+        el("span", { className: "s num", textContent: gly + " · " + e.items.map(itemLabel).join(" + ") + (e.note ? " — " + e.note : "") })),
+      el("span", { className: "u num", textContent: fmtUnits(e.units) + " U" }));
     return row;
   }
 
@@ -191,14 +193,14 @@
     const same = sorted.filter(e => comboKey(e.items) === ck).slice(0, 4);
     const shown = new Set(same.map(e => e.id));
     const groups = [];
-    if (same.length) groups.push(el("div", { className: "memo-group" }, el("div", { className: "lbl", textContent: current.length > 1 ? "Exactement ce repas" : "La dernière fois" }), ...same.map(memoRow)));
+    if (same.length) groups.push(el("div", { className: "tl-group", textContent: current.length > 1 ? "Exactement ce repas" : "Ce plat seul" }), ...same.map(memoRow));
     current.forEach(it => {
       const k = norm(it.name);
       const withIt = sorted.filter(e => !shown.has(e.id) && e.items.some(i => norm(i.name) === k)).slice(0, 2);
       withIt.forEach(e => shown.add(e.id));
-      if (withIt.length) groups.push(el("div", { className: "memo-group" }, el("div", { className: "lbl", textContent: "Avec " + it.name }), ...withIt.map(memoRow)));
+      if (withIt.length) groups.push(el("div", { className: "tl-group", textContent: "Avec " + it.name }), ...withIt.map(memoRow));
     });
-    if (!groups.length) groups.push(el("p", { className: "memo-note", style: "margin:0", textContent: "Première fois pour ce repas : vos unités seront rappelées ici la prochaine fois." }));
+    if (!groups.length) groups.push(el("p", { className: "note-txt", style: "padding:8px 0", textContent: "Première fois pour ce repas : vos unités seront rappelées ici la prochaine fois." }));
     body.replaceChildren(...groups);
     box.hidden = false;
   }
@@ -206,20 +208,26 @@
   // ---------- photo et reconnaissance ----------
   let photo = null; // { id, blob, url, emb, saved }
 
-  function setStatus(txt) { $("ia-status").textContent = txt; }
+  function setStatus(txt, busy) {
+    $("ia-status").replaceChildren(...(busy ? [el("span", { className: "spinner" })] : []), document.createTextNode(txt));
+    $("ia-status").hidden = !txt;
+  }
   function clearPhoto() {
     if (photo && !photo.saved) URL.revokeObjectURL(photo.url);
     photo = null;
-    $("photo-preview").hidden = true; $("photo-btn").hidden = false;
-    $("ia-props").hidden = true; $("ia-chips").replaceChildren();
+    $("photo-img").hidden = true; $("photo-img").removeAttribute("src");
+    $("photo-btn").hidden = false; $("photo-retake").hidden = true;
+    $("ia-zone").hidden = true;
     $("f-photo").value = "";
   }
   $("photo-remove").onclick = clearPhoto;
+  $("ia-other").onclick = () => { $("f-search").focus(); $("f-search").scrollIntoView({ block: "center", behavior: "smooth" }); };
+  $("btn-focus-add").onclick = $("ia-other").onclick;
 
   PhotoIA.onProgress = (p) => {
     if (!p.total || !/onnx/.test(p.file || "")) return;
     const txt = "Première utilisation : téléchargement du module d'IA… " + Math.round(p.loaded / p.total * 100) + " %";
-    if (photo && !photo.emb) setStatus(txt);
+    if (photo && !photo.emb) setStatus(txt, true);
     $("model-info").textContent = txt;
   };
 
@@ -231,9 +239,12 @@
     try { prepared = await PhotoIA.prepare(file); }
     catch { toast("Cette image n'a pas pu être ouverte."); return; }
     const p = photo = { id: "p" + newId(), blob: prepared.blob, url: URL.createObjectURL(prepared.blob), emb: null, saved: false };
-    $("photo-img").src = p.url;
-    $("photo-preview").hidden = false; $("photo-btn").hidden = true;
-    setStatus("Analyse de la photo… Vous pouvez saisir votre glycémie en attendant.");
+    $("photo-img").src = p.url; $("photo-img").hidden = false;
+    $("photo-btn").hidden = true; $("photo-retake").hidden = false;
+    $("ia-zone").hidden = false;
+    $("ia-eyebrow").textContent = "Analyse de la photo";
+    $("ia-question").hidden = true; $("ia-buttons").hidden = true; $("ia-alts").hidden = true;
+    setStatus("Un instant… vous pouvez saisir votre glycémie en attendant.", true);
     try {
       const emb = await PhotoIA.analyse(prepared);
       p.emb = emb;
@@ -242,28 +253,41 @@
       const props = await PhotoIA.suggest(emb, data.entries, allFoods(), norm);
       if (photo !== p) return;
       renderProposals(props);
-      setStatus(props.length ? "Analyse terminée." : "Plat non reconnu : choisissez-le dans la liste.");
+      setStatus(props.length ? "" : "Plat non reconnu : choisissez-le dans la liste ci-dessous.");
     } catch (err) {
       console.warn("Reconnaissance indisponible", err);
       if (photo === p) setStatus(navigator.onLine ? "La reconnaissance n'a pas fonctionné. Choisissez le plat dans la liste." : "Reconnaissance indisponible hors ligne tant que le module d'IA n'a pas été téléchargé. Choisissez le plat dans la liste.");
     }
   };
 
+  // La meilleure proposition devient une question « Steak-frites ? » (Oui / Autre plat),
+  // les suivantes restent à portée de doigt en dessous.
+  const propItems = (pr) => pr.kind === "combo" ? pr.items : [pr.food];
+  const propName = (pr) => propItems(pr).map(i => i.name).join(" + ");
+  function acceptProposal(pr) {
+    propItems(pr).forEach(i => { if (!current.some(c => norm(c.name) === norm(i.name))) addItem(i); });
+  }
   function renderProposals(props) {
-    const chips = props.map(pr => {
-      if (pr.kind === "combo") {
-        const b = el("button", { type: "button", className: "chip ia" }, document.createTextNode(pr.items.map(i => i.name).join(" + ")),
-          el("span", { className: "mine", textContent: "comme le " + new Date(pr.entry.at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) }));
-        b.onclick = () => { pr.items.forEach(i => { if (!current.some(c => norm(c.name) === norm(i.name))) current.push({ ...i }); }); b.remove(); renderItems(); renderMemo(); };
-        return b;
-      }
-      const b = el("button", { type: "button", className: "chip ia " + pr.food.cat }, document.createTextNode("+ " + pr.food.name));
-      if (pr.mine) b.append(el("span", { className: "mine", textContent: "déjà noté" }));
-      b.onclick = () => { b.remove(); addItem(pr.food); };
+    if (!props.length) return;
+    const [best, ...rest] = props;
+    $("ia-eyebrow").textContent = best.kind === "combo"
+      ? "Comme le " + new Date(best.entry.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
+      : best.mine ? "Vous l'avez déjà noté" : "L'IA a reconnu";
+    $("ia-question").textContent = propName(best) + " ?";
+    $("ia-question").hidden = false; $("ia-buttons").hidden = false;
+    $("ia-yes").onclick = () => {
+      acceptProposal(best);
+      $("ia-eyebrow").textContent = "Ajouté à mon repas";
+      $("ia-question").textContent = "✓ " + propName(best);
+      $("ia-buttons").hidden = true;
+    };
+    const alts = rest.slice(0, 3).map(pr => {
+      const b = el("button", { type: "button", textContent: propName(pr) });
+      b.onclick = () => { acceptProposal(pr); b.remove(); if (!$("ia-alts").querySelector("button")) $("ia-alts").hidden = true; };
       return b;
     });
-    $("ia-chips").replaceChildren(...chips);
-    $("ia-props").hidden = !chips.length;
+    $("ia-alts").replaceChildren(el("span", { textContent: "Ou :" }), ...alts);
+    $("ia-alts").hidden = !alts.length;
   }
 
   function resetForm() {
@@ -271,8 +295,20 @@
     current = [];
     $("f-gly").value = ""; $("f-units").value = ""; $("f-note").value = ""; $("f-search").value = "";
     $("f-when").value = nowLocal();
-    renderSearch(); renderItems(); renderMemo();
+    renderSearch(); renderItems(); renderMemo(); syncSave(); renderDate();
   }
+
+  // le bouton du bas rappelle la dose saisie : « Enregistrer · 3 unités »
+  function syncSave() {
+    const u = parseNum($("f-units").value);
+    $("btn-save").textContent = u == null ? "Enregistrer" : "Enregistrer · " + fmtUnits(Math.round(u * 2) / 2) + (u > 1 ? " unités" : " unité");
+  }
+  function renderDate() {
+    const d = new Date($("f-when").value || Date.now());
+    $("date-chip").textContent = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+  $("f-units").addEventListener("input", syncSave);
+  $("f-when").addEventListener("change", renderDate);
 
   // saisie manuelle : un nom connu est ajouté tout de suite, un nouveau nom demande « plat ou boisson ? »
   function addTyped() {
@@ -289,7 +325,7 @@
   $("f-search").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addTyped(); } });
   $("btn-add").onclick = () => { addTyped(); syncAdd(); };
   syncAdd();
-  const step = (d) => { const v = parseNum($("f-units").value) || 0; $("f-units").value = fmtUnits(Math.max(0, Math.round((v + d) * 2) / 2)); };
+  const step = (d) => { const v = parseNum($("f-units").value) || 0; $("f-units").value = fmtUnits(Math.max(0, Math.round((v + d) * 2) / 2)); syncSave(); };
   $("u-minus").onclick = () => step(-0.5);
   $("u-plus").onclick = () => step(0.5);
 
@@ -331,12 +367,14 @@
 
   function entryCard(e) {
     const its = el("div", { className: "its" }, ...e.items.map(i => el("span", { className: "pill " + i.cat, textContent: itemLabel(i) })));
-    if (e.photoId) its.prepend(thumb(e.photoId));
-    const what = el("div", {}, its, el("div", { className: "meta num", textContent: "Glycémie avant : " + fmtGly(e.gly) + (e.gly != null ? " " + UNIT[data.settings.unit] : "") }));
-    if (e.note) what.append(el("div", { className: "note", textContent: e.note }));
+    const info = el("div", { style: "min-width:0" },
+      el("div", { className: "t num", textContent: new Date(e.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
+      its, el("div", { className: "meta num", textContent: "Glycémie avant : " + fmtGly(e.gly) + (e.gly != null ? " " + UNIT[data.settings.unit] : "") }));
+    if (e.note) info.append(el("div", { className: "note", textContent: e.note }));
+    const what = el("div", { className: "top" }, ...(e.photoId ? [thumb(e.photoId)] : []), info);
     const acts = el("div", { className: "acts" });
     const again = el("button", { type: "button", textContent: "Remanger ce repas" });
-    again.onclick = () => { current = e.items.map(i => ({ ...i })); show("repas"); renderItems(); renderMemo(); $("f-gly").focus(); };
+    again.onclick = () => { resetForm(); current = e.items.map(i => ({ ...i })); show("repas"); renderItems(); renderMemo(); $("f-gly").focus(); };
     const del = el("button", { type: "button", className: "btn-danger", textContent: "Supprimer" });
     del.onclick = () => {
       const yes = el("button", { type: "button", className: "btn-danger", textContent: "Oui, supprimer" });
@@ -346,8 +384,7 @@
       acts.replaceChildren(el("span", { textContent: "Supprimer ce repas ?" }), no, yes);
     };
     acts.append(again, del);
-    return el("article", { className: "card entry" },
-      el("div", { className: "t num", textContent: new Date(e.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
+    return el("article", { className: "entry" },
       what,
       el("div", { className: "u num" }, document.createTextNode(fmtUnits(e.units)), el("small", { textContent: "unités" })),
       acts);
@@ -423,11 +460,11 @@
   }
 
   // ---------- navigation ----------
-  const TITLES = { repas: "Nouveau repas", journal: "Journal", reglages: "Réglages" };
   function show(view) {
     ["repas", "journal", "reglages"].forEach(v => ($("view-" + v).hidden = v !== view));
     document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.view === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
-    $("view-title").textContent = TITLES[view];
+    $("btn-save").hidden = view !== "repas";
+    document.documentElement.style.setProperty("--bottom-h", view === "repas" ? "132px" : "70px");
     if (view === "journal") renderJournal();
     if (view === "reglages") renderStorage();
     window.scrollTo(0, 0);
