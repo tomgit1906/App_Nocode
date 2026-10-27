@@ -13,7 +13,7 @@ Mémo personnel pour personnes diabétiques : photo du repas, glycémie avant le
 
 ## Installer sur Android
 
-1. Ouvrir l'application dans Chrome : https://thomasabraham84-design.github.io/App_Noco/carnet-pwa/
+1. Ouvrir l'application dans Chrome : https://tomgit1906.github.io/App_Nocode/carnet-pwa/
 2. Menu ⋮ → « Installer l'application ».
 
 ## Tester sur PC
