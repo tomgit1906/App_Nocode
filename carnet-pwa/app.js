@@ -177,7 +177,9 @@
   function memoRow(e) {
     const row = el("div", { className: "tl-row" + (e.photoId ? " has-photo" : "") });
     if (e.photoId) row.append(thumb(e.photoId));
-    const gly = e.gly != null ? "glycémie " + fmtGly(e.gly) + " " + UNIT[data.settings.unit] : "glycémie non notée";
+    const after = e.glyAfter != null ? " → " + fmtGly(e.glyAfter) : "";
+    const gly = e.gly != null ? "glycémie " + fmtGly(e.gly) + after + " " + UNIT[data.settings.unit]
+      : after ? "glycémie 2 h après " + fmtGly(e.glyAfter) + " " + UNIT[data.settings.unit] : "glycémie non notée";
     row.append(
       el("div", { style: "display:grid;min-width:0" },
         el("span", { className: "d num", textContent: fmtWhen(e.at) + " · " + gly }),
@@ -380,6 +382,45 @@
     root.replaceChildren(...out);
   }
 
+  // glycémie 2 h après : notée à la main depuis le journal, modifiable ; vider la case l'efface
+  function afterRow(e) {
+    const box = el("div", { className: "after" });
+    const showValue = () => {
+      if (e.glyAfter == null) {
+        const add = el("button", { type: "button", textContent: "+ Glycémie 2 h après" });
+        add.onclick = showForm;
+        box.replaceChildren(add);
+      } else {
+        const edit = el("button", { type: "button", textContent: "Modifier" });
+        edit.onclick = showForm;
+        box.replaceChildren(el("span", { className: "num", textContent: "Glycémie 2 h après : " + fmtGly(e.glyAfter) + " " + UNIT[data.settings.unit] }), edit);
+      }
+    };
+    const showForm = () => {
+      const input = el("input", { type: "text", inputMode: "decimal", autocomplete: "off", className: "num", value: e.glyAfter == null ? "" : fmtGly(e.glyAfter) });
+      input.setAttribute("aria-label", "Glycémie 2 h après, en " + UNIT[data.settings.unit]);
+      const ok = el("button", { type: "button", className: "ok", textContent: "Enregistrer" });
+      const no = el("button", { type: "button", textContent: "Annuler" });
+      ok.onclick = () => {
+        const str = input.value.trim();
+        const v = glyToMg(str);
+        if (str && v == null) { toast("La glycémie n'est pas un nombre valide."); input.focus(); return; }
+        const before = e.glyAfter;
+        if (str) e.glyAfter = v; else delete e.glyAfter;
+        if (!save()) { if (before == null) delete e.glyAfter; else e.glyAfter = before; return; }
+        showValue();
+        renderMemo();
+        toast(str ? "Glycémie 2 h après enregistrée" : "Glycémie 2 h après effacée");
+      };
+      no.onclick = showValue;
+      input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); ok.click(); } });
+      box.replaceChildren(el("span", { textContent: "Glycémie 2 h après" }), el("span", { className: "after-in" }, input, el("span", { textContent: UNIT[data.settings.unit] })), el("span", { className: "after-btns" }, no, ok));
+      input.focus();
+    };
+    showValue();
+    return box;
+  }
+
   function entryCard(e) {
     const its = el("div", { className: "its" }, ...e.items.map(i => el("span", { className: "pill " + i.cat, textContent: itemLabel(i) })));
     const info = el("div", { style: "min-width:0" },
@@ -402,6 +443,7 @@
     return el("article", { className: "entry" },
       what,
       el("div", { className: "u num" }, document.createTextNode(fmtUnits(e.units)), el("small", { textContent: "unités" })),
+      afterRow(e),
       acts);
   }
   $("j-search").addEventListener("input", renderJournal);
@@ -443,10 +485,10 @@
   $("btn-csv").onclick = () => {
     if (!data.entries.length) { toast("Rien à exporter pour l'instant."); return; }
     const esc = (v) => { const s = v == null ? "" : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const rows = [["Date", "Heure", "Glycémie avant (" + UNIT[data.settings.unit] + ")", "Mangé / bu", "Unités", "Note"]];
+    const rows = [["Date", "Heure", "Glycémie avant (" + UNIT[data.settings.unit] + ")", "Glycémie 2 h après (" + UNIT[data.settings.unit] + ")", "Mangé / bu", "Unités", "Note"]];
     [...data.entries].sort((a, b) => a.at.localeCompare(b.at)).forEach(e => {
       const d = new Date(e.at);
-      rows.push([d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), e.gly == null ? "" : fmtGly(e.gly), e.items.map(itemLabel).join(" + "), fmtUnits(e.units), e.note]);
+      rows.push([d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), e.gly == null ? "" : fmtGly(e.gly), e.glyAfter == null ? "" : fmtGly(e.glyAfter), e.items.map(itemLabel).join(" + "), fmtUnits(e.units), e.note]);
     });
     downloadFile("insulink-" + today() + ".csv", "﻿" + rows.map(r => r.map(esc).join(";")).join("\n"), "text/csv");
   };
