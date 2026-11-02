@@ -1,6 +1,6 @@
 // Garde tous les fichiers de l'application sur le téléphone pour qu'elle marche sans internet.
 // Changer VERSION à chaque mise à jour des fichiers.
-const VERSION = "memo-insuline-v10";
+const VERSION = "memo-insuline-v11";
 const LIBS = "memo-insuline-libs"; // bibliothèque d'IA, gardée d'une version à l'autre
 const FILES = [
   "./", "index.html", "app.js", "catalogue.js", "photos.js", "ia-worker.js", "manifest.webmanifest",
@@ -12,7 +12,8 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== LIBS).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  // Seules les anciennes versions de l'application sont effacées : le module d'IA reste sur le téléphone.
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith("memo-insuline-v") && k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener("fetch", (e) => {

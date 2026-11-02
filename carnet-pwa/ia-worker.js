@@ -12,10 +12,14 @@ let tokenizer, textModel, processor, visionModel;
 
 function load() {
   if (!ready) {
+    // La bibliothèque signale aussi une progression quand elle relit un fichier déjà sur le téléphone :
+    // on précise donc si le fichier est déjà là, pour n'annoncer que les vrais téléchargements.
+    let cachedUrls = [];
     const progress_callback = (p) => {
-      if (p.status === "progress") self.postMessage({ type: "progress", file: p.file, loaded: p.loaded, total: p.total });
+      if (p.status === "progress") self.postMessage({ type: "progress", file: p.file, loaded: p.loaded, total: p.total, cached: cachedUrls.some(u => u.endsWith("/" + p.file)) });
     };
     ready = (async () => {
+      try { cachedUrls = (await (await caches.open("transformers-cache")).keys()).map(r => r.url); } catch {}
       tokenizer = await AutoTokenizer.from_pretrained(MODEL, { progress_callback });
       textModel = await CLIPTextModelWithProjection.from_pretrained(MODEL, { progress_callback });
       processor = await AutoProcessor.from_pretrained(MODEL, { progress_callback });

@@ -228,7 +228,7 @@
 
   PhotoIA.onProgress = (p) => {
     if (!p.total || !/onnx/.test(p.file || "")) return;
-    const txt = "Première utilisation : téléchargement du module d'IA… " + Math.round(p.loaded / p.total * 100) + " %";
+    const txt = p.cached ? "Préparation du module d'IA…" : "Téléchargement du module d'IA… " + Math.round(p.loaded / p.total * 100) + " %";
     if (photo && !photo.emb) setStatus(txt, true);
     $("model-info").textContent = txt;
   };
@@ -504,7 +504,7 @@
 
   $("btn-model").onclick = async () => {
     $("btn-model").disabled = true;
-    $("model-info").textContent = "Téléchargement du module d'IA…";
+    $("model-info").textContent = "Préparation du module d'IA…";
     try { await PhotoIA.loadModel(); $("model-info").textContent = "Module d'IA prêt : la reconnaissance fonctionne aussi hors ligne."; }
     catch { $("model-info").textContent = "Le téléchargement a échoué. Vérifiez la connexion internet et réessayez."; }
     $("btn-model").disabled = false;
