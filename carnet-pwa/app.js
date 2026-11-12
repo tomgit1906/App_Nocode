@@ -224,11 +224,12 @@
     if (photo && !photo.saved) URL.revokeObjectURL(photo.url);
     photo = null;
     $("photo-img").hidden = true; $("photo-img").removeAttribute("src");
-    $("photo-btn").hidden = false; $("photo-retake").hidden = true;
+    $("photo-card").hidden = true; $("photo-retake").hidden = true;
     $("ia-zone").hidden = true;
     $("f-photo").value = "";
   }
   $("photo-remove").onclick = clearPhoto;
+  $("photo-fab").addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); $("f-photo").click(); } });
   $("ia-other").onclick = () => { $("add-panel").open = true; $("f-search").focus(); $("f-search").scrollIntoView({ block: "center", behavior: "smooth" }); };
 
   PhotoIA.onProgress = (p) => {
@@ -247,7 +248,8 @@
     catch { toast("Cette image n'a pas pu être ouverte."); return; }
     const p = photo = { id: "p" + newId(), blob: prepared.blob, url: URL.createObjectURL(prepared.blob), emb: null, saved: false };
     $("photo-img").src = p.url; $("photo-img").hidden = false;
-    $("photo-btn").hidden = true; $("photo-retake").hidden = false;
+    $("photo-card").hidden = false; $("photo-retake").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
     $("ia-zone").hidden = false;
     $("ia-eyebrow").textContent = "Analyse de la photo";
     $("ia-question").hidden = true; $("ia-buttons").hidden = true; $("ia-alts").hidden = true;
@@ -588,6 +590,7 @@
   // ---------- navigation ----------
   function show(view) {
     ["repas", "journal", "reglages"].forEach(v => ($("view-" + v).hidden = v !== view));
+    $("photo-fab").hidden = view !== "repas";
     document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.view === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     if (view === "journal") renderJournal();
     if (view === "repas" && !adding) renderOngoing();

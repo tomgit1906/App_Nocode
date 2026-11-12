@@ -75,11 +75,6 @@ section { min-width: 0; }
 
 /* ---------- photo ---------- */
 .photo-card { padding: 14px; }
-.ph-empty { display: flex; align-items: center; gap: 14px; cursor: pointer; }
-.cam { width: 84px; height: 84px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-.cam svg { width: 38px; height: 38px; }
-.ph-empty strong { display: block; font-size: 18px; font-weight: 900; }
-.ph-empty small { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
 .ia { display: grid; gap: 14px; }
 .ph-row { display: flex; gap: 14px; align-items: center; }
 .ph-row img { width: 112px; height: 112px; border-radius: 22px; object-fit: cover; background: var(--ph); flex: none; display: block; }
@@ -188,6 +183,12 @@ section { min-width: 0; }
 
 /* ---------- navigation ---------- */
 .bottom { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 10; pointer-events: none; }
+/* bouton photo : rond, à droite de la barre, sous le pouce ; seulement sur l'écran Repas */
+.bar { display: flex; align-items: center; gap: 10px; }
+.bar nav.tabs { flex: 1; min-width: 0; }
+.fab { pointer-events: auto; width: 62px; height: 62px; flex: none; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+.fab svg { width: 28px; height: 28px; }
+.fab:active { transform: scale(0.95); }
 nav.tabs { pointer-events: auto; background: var(--nav-bg); border-radius: 999px; padding: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
 nav.tabs button { border: 0; background: none; border-radius: 999px; padding: 12px 6px; font-size: 16px; font-weight: 700; color: var(--nav-fg); }
 nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(--nav-on-fg); font-weight: 900; }
@@ -255,11 +256,7 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
       <button type="button" class="btn-outline" id="ongoing-cancel" hidden>Annuler l'ajout</button>
     </section>
 
-    <section class="card photo-card" aria-label="Photo du repas">
-      <label class="ph-empty" id="photo-btn" for="f-photo">
-        <span class="cam" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
-        <span><strong>Prendre mon repas en photo</strong><small>Facultatif · l'IA reconnaît le plat, sur votre téléphone</small></span>
-      </label>
+    <section class="card photo-card" id="photo-card" aria-label="Photo du repas" hidden>
       <div class="ia" id="ia-zone" hidden aria-live="polite">
         <div class="ph-row">
           <img id="photo-img" alt="Photo du repas" hidden>
@@ -280,7 +277,6 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
         </div>
         <p class="ia-alts" id="ia-alts" hidden></p>
       </div>
-      <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
     </section>
 
     <label class="card gly-card" for="f-gly" id="gly-card">
@@ -291,7 +287,7 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
     <section class="card" aria-labelledby="h-repas">
       <h2 id="h-repas">Mon assiette</h2>
       <ul class="items" id="items"></ul>
-      <p class="empty-list" id="items-empty">Prenez une photo, ou ajoutez ce que vous mangez et buvez.</p>
+      <p class="empty-list" id="items-empty">Prenez une photo avec le bouton en bas à droite, ou ajoutez ce que vous mangez et buvez.</p>
       <details class="fold" id="add-panel">
       <summary class="fold-sum add-sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter un plat ou une boisson</span></summary>
       <div class="fold-body">
@@ -382,11 +378,15 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
 
 <div class="bottom gutter">
   <div class="wrap">
-    <nav class="tabs" aria-label="Navigation">
-      <button type="button" data-view="repas" aria-current="page">Repas</button>
-      <button type="button" data-view="journal">Journal</button>
-      <button type="button" data-view="reglages">Réglages</button>
-    </nav>
+    <div class="bar">
+      <nav class="tabs" aria-label="Navigation">
+        <button type="button" data-view="repas" aria-current="page">Repas</button>
+        <button type="button" data-view="journal">Journal</button>
+        <button type="button" data-view="reglages">Réglages</button>
+      </nav>
+      <label class="fab" id="photo-fab" for="f-photo" tabindex="0" role="button" aria-label="Prendre mon repas en photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></label>
+      <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
+    </div>
   </div>
 </div>
 
