@@ -1,6 +1,6 @@
 // Garde tous les fichiers de l'application sur le téléphone pour qu'elle marche sans internet.
 // Changer VERSION à chaque mise à jour des fichiers.
-const VERSION = "memo-insuline-v13";
+const VERSION = "memo-insuline-v14";
 const LIBS = "memo-insuline-libs"; // bibliothèque d'IA, gardée d'une version à l'autre
 const FILES = [
   "./", "index.html", "app.js", "catalogue.js", "photos.js", "ia-worker.js", "manifest.webmanifest",
@@ -8,7 +8,8 @@ const FILES = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // « reload » : toujours les fichiers du serveur, jamais une copie gardée par le navigateur (GitHub la garde 10 min)
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
