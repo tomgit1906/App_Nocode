@@ -162,7 +162,7 @@ section { min-width: 0; }
 .add-sum { border: 2px dashed var(--dash); border-radius: 18px; padding: 10px 14px; color: var(--accent); }
 .add-sum svg { width: 20px; height: 20px; flex: none; }
 .fold[open] > .add-sum { border-style: solid; border-color: var(--line); }
-.fold-body { display: grid; gap: 14px; padding-top: 14px; min-width: 0; }
+.fold-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 14px; min-width: 0; }
 .more { padding-top: 10px; padding-bottom: 10px; }
 
 /* ---------- heure et note ---------- */
@@ -181,6 +181,9 @@ section { min-width: 0; }
 .dose-val input::placeholder { color: var(--muted); opacity: 0.5; }
 .dose-val span { font-size: 17px; font-weight: 700; color: var(--muted); }
 .dose-hint { margin: -4px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.ongoing { border: 2px solid var(--accent); }
+.ongoing-txt { display: grid; gap: 4px; }
+.ongoing-items { margin: 0; font-size: 16px; font-weight: 700; }
 .btn-save { border: 0; border-radius: 999px; padding: 18px; background: var(--accent); color: var(--accent-ink); font-size: 18px; font-weight: 900; width: 100%; }
 
 /* ---------- navigation ---------- */
@@ -237,8 +240,20 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
   <div class="wrap">
     <header class="hello">
       <span class="date num" id="date-chip"></span>
-      <h1>Bon appétit</h1>
+      <h1 id="hello-title">Bon appétit</h1>
     </header>
+
+    <section class="card ongoing" id="ongoing" hidden aria-live="polite">
+      <div class="ongoing-txt">
+        <span class="eyebrow" id="ongoing-title"></span>
+        <p class="ongoing-items" id="ongoing-items"></p>
+      </div>
+      <div class="two" id="ongoing-btns">
+        <button type="button" class="btn-accent" id="ongoing-add">Ajouter au repas</button>
+        <button type="button" class="btn-outline" id="ongoing-new">Nouveau repas</button>
+      </div>
+      <button type="button" class="btn-outline" id="ongoing-cancel" hidden>Annuler l'ajout</button>
+    </section>
 
     <section class="card photo-card" aria-label="Photo du repas">
       <label class="ph-empty" id="photo-btn" for="f-photo">
@@ -268,7 +283,7 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
       <input type="file" id="f-photo" accept="image/*" capture="environment" hidden>
     </section>
 
-    <label class="card gly-card" for="f-gly">
+    <label class="card gly-card" for="f-gly" id="gly-card">
       <span><strong>Ma glycémie</strong><small>avant le repas</small></span>
       <span class="gly-box"><input id="f-gly" type="text" inputmode="decimal" autocomplete="off" placeholder="—" class="num"><span class="u-label">g/L</span></span>
     </label>
@@ -302,7 +317,7 @@ nav.tabs button[aria-current="page"] { background: var(--nav-on-bg); color: var(
       <p class="note-txt">Vos propres notes. L'application ne calcule pas de dose.</p>
     </section>
 
-    <section class="card more" aria-label="Heure et note">
+    <section class="card more" id="more-card" aria-label="Heure et note">
       <details class="fold" id="more-panel">
         <summary class="fold-sum"><span>Heure et note</span><span class="fold-val num" id="when-sum"></span></summary>
         <div class="fold-body">

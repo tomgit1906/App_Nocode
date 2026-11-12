@@ -3,7 +3,9 @@
 
   // ---------- données (uniquement sur le téléphone) ----------
   // Glycémie stockée en mg/dL ; affichée dans l'unité choisie.
-  // Repas : { id, at: "AAAA-MM-JJTHH:MM", gly: mg/dL|null, items: [{ name, cat, size? }], units, note }
+  // Repas : { id, at: "AAAA-MM-JJTHH:MM", gly: mg/dL|null, items: [{ name, cat, size? }], units, note,
+  //          savedAt (horodatage), extraUnits? (unités injectées en plus pendant le repas), glyAfter? }
+  // data.ongoing : id du dernier repas enregistré, complétable pendant ONGOING_MS.
   const KEY = "memo-insuline-v1";
   let data = { version: 1, settings: { unit: "gl" }, entries: [], custom: [] };
   let storageOk = true;
@@ -46,6 +48,7 @@
     const d = new Date(at);
     return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   }
+  const unitsText = (e) => fmtUnits(e.units) + (e.extraUnits ? " + " + fmtUnits(e.extraUnits) : "");
   const itemLabel = (it) => it.name + (it.size ? " (" + it.size.toLowerCase() + ")" : "");
   const itemKey = (it) => norm(it.name) + (it.size ? "|" + norm(it.size) : "");
   const comboKey = (items) => items.map(itemKey).sort().join(" + ");
@@ -55,6 +58,8 @@
 
   // ---------- repas en cours ----------
   let current = [];
+  let adding = null; // repas du journal que l'on complète (dessert…), sinon nouveau repas
+  const ONGOING_MS = 3 * 3600 * 1000;
 
   function allFoods() {
     // aliments du patient (avec nombre d'utilisations) + catalogue, sans doublon
@@ -184,7 +189,7 @@
       el("div", { style: "display:grid;min-width:0" },
         el("span", { className: "d num", textContent: fmtWhen(e.at) + " · " + gly }),
         el("span", { className: "s", textContent: e.items.map(itemLabel).join(" + ") + (e.note ? " — " + e.note : "") })),
-      el("span", { className: "u num", textContent: fmtUnits(e.units) + " U" }));
+      el("span", { className: "u num", textContent: unitsText(e) + " U" }));
     return row;
   }
 
@@ -295,16 +300,52 @@
   function resetForm() {
     clearPhoto();
     current = [];
+    adding = null;
     $("f-gly").value = ""; $("f-units").value = ""; $("f-note").value = ""; $("f-search").value = "";
     $("f-when").value = nowLocal();
     $("add-panel").open = false; $("more-panel").open = false;
-    renderSearch(); renderItems(); renderMemo(); syncSave(); renderDate();
+    renderSearch(); renderItems(); renderMemo(); syncSave(); renderDate(); renderOngoing();
   }
+
+  // ---------- repas en cours : on peut le compléter pendant 3 h (dessert, café…) ----------
+  // Le dernier repas est retrouvé dans les données à chaque ouverture : le bandeau survit à la fermeture de l'app.
+  function ongoingEntry() {
+    const e = data.ongoing && data.entries.find(x => x.id === data.ongoing);
+    return e && e.savedAt && Date.now() - e.savedAt < ONGOING_MS ? e : null;
+  }
+  function renderOngoing() {
+    const e = adding ? data.entries.find(x => x.id === adding) : ongoingEntry();
+    if (adding && !e) adding = null;
+    const time = e ? new Date(e.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+    $("ongoing").hidden = !e;
+    if (e) {
+      $("ongoing-title").textContent = (adding ? "Ajout au repas de " : "Repas en cours · ") + time;
+      $("ongoing-items").textContent = e.items.map(itemLabel).join(" + ") + " · " + unitsText(e) + " U";
+    }
+    $("ongoing-btns").hidden = !!adding;
+    $("ongoing-cancel").hidden = !adding;
+    $("hello-title").textContent = adding ? "Et ensuite ?" : "Bon appétit";
+    $("gly-card").hidden = !!adding;
+    $("more-card").hidden = !!adding;
+    $("h-ins").textContent = adding ? "Insuline en plus (facultatif)" : "Insuline injectée";
+    syncSave();
+  }
+  $("ongoing-add").onclick = () => {
+    const e = ongoingEntry(); if (!e) { renderOngoing(); return; }
+    adding = e.id; // ce qui est déjà dans « Mon assiette » sera ajouté au repas
+    renderOngoing();
+    $("add-panel").open = true;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  $("ongoing-cancel").onclick = () => resetForm();
+  $("ongoing-new").onclick = () => { data.ongoing = null; save(); renderOngoing(); };
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !adding) renderOngoing(); });
 
   // le bouton du bas rappelle la dose saisie : « Enregistrer · 3 unités »
   function syncSave() {
     const u = parseNum($("f-units").value);
-    $("btn-save").textContent = u == null ? "Enregistrer" : "Enregistrer · " + fmtUnits(Math.round(u * 10) / 10) + (u > 1 ? " unités" : " unité");
+    const verb = adding ? "Ajouter au repas" : "Enregistrer";
+    $("btn-save").textContent = u == null || (adding && !u) ? verb : verb + " · " + fmtUnits(Math.round(u * 10) / 10) + (u > 1 ? " unités" : " unité");
   }
   function renderDate() {
     const d = new Date($("f-when").value || Date.now());
@@ -348,22 +389,49 @@
 
   $("btn-save").onclick = async () => {
     if (!current.length) { toast("Ajoutez au moins un plat ou une boisson."); $("f-search").focus(); return; }
+    if (adding) return addToMeal();
     const units = parseNum($("f-units").value);
     if (units == null || units < 0 || units > 100) { toast("Indiquez le nombre d'unités injectées (0 si aucune)."); $("f-units").focus(); return; }
     const glyStr = $("f-gly").value.trim();
     const gly = glyToMg(glyStr);
     if (glyStr && gly == null) { toast("La glycémie n'est pas un nombre valide."); $("f-gly").focus(); return; }
-    const e = { id: newId(), at: $("f-when").value || nowLocal(), gly, items: current.map(i => ({ ...i })), units: Math.round(units * 10) / 10, note: $("f-note").value.trim() };
+    const e = { id: newId(), at: $("f-when").value || nowLocal(), gly, items: current.map(i => ({ ...i })), units: Math.round(units * 10) / 10, note: $("f-note").value.trim(), savedAt: Date.now() };
     if (photo) {
       try { await PhotoIA.save(photo.id, photo.blob, photo.emb); photo.saved = true; e.photoId = photo.id; }
       catch { toast("La photo n'a pas pu être gardée (stockage plein ?). Le repas est enregistré sans photo."); }
     }
     data.entries.push(e);
-    if (!save()) { data.entries.pop(); if (e.photoId) PhotoIA.remove(e.photoId); return; }
+    const prevOngoing = data.ongoing;
+    data.ongoing = e.id;
+    if (!save()) { data.entries.pop(); data.ongoing = prevOngoing; if (e.photoId) PhotoIA.remove(e.photoId); return; }
     toast("Enregistré : " + fmtUnits(e.units) + " unités");
     resetForm();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // complète le repas en cours : plats ajoutés à la suite, unités en plus notées à part (aucun calcul)
+  async function addToMeal() {
+    const e = data.entries.find(x => x.id === adding);
+    if (!e) { toast("Ce repas n'existe plus."); resetForm(); return; }
+    const extra = parseNum($("f-units").value) || 0;
+    if (extra < 0 || extra > 100) { toast("Le nombre d'unités n'est pas valide."); $("f-units").focus(); return; }
+    const before = { items: e.items, extraUnits: e.extraUnits, photoId: e.photoId };
+    e.items = [...e.items, ...current.map(i => ({ ...i }))];
+    if (extra) e.extraUnits = Math.round(((e.extraUnits || 0) + extra) * 10) / 10;
+    // la photo du dessert n'est gardée que si le repas n'en a pas encore
+    if (photo && !e.photoId) {
+      try { await PhotoIA.save(photo.id, photo.blob, photo.emb); photo.saved = true; e.photoId = photo.id; } catch {}
+    }
+    if (!save()) {
+      e.items = before.items;
+      if (before.extraUnits == null) delete e.extraUnits; else e.extraUnits = before.extraUnits;
+      if (e.photoId !== before.photoId) { PhotoIA.remove(e.photoId).catch(() => {}); e.photoId = before.photoId; }
+      return;
+    }
+    toast("Ajouté au repas de " + new Date(e.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + (extra ? " · + " + fmtUnits(extra) + " U" : ""));
+    resetForm();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   // ---------- journal ----------
   function renderJournal() {
@@ -435,14 +503,15 @@
     del.onclick = () => {
       const yes = el("button", { type: "button", className: "btn-danger", textContent: "Oui, supprimer" });
       const no = el("button", { type: "button", textContent: "Annuler" });
-      yes.onclick = () => { data.entries = data.entries.filter(x => x.id !== e.id); save(); if (e.photoId) PhotoIA.remove(e.photoId).catch(() => {}); renderJournal(); toast("Repas supprimé"); };
+      yes.onclick = () => { data.entries = data.entries.filter(x => x.id !== e.id); save(); if (e.photoId) PhotoIA.remove(e.photoId).catch(() => {}); renderJournal(); renderOngoing(); toast("Repas supprimé"); };
       no.onclick = () => acts.replaceChildren(again, del);
       acts.replaceChildren(el("span", { textContent: "Supprimer ce repas ?" }), no, yes);
     };
     acts.append(again, del);
     return el("article", { className: "entry" },
       what,
-      el("div", { className: "u num" }, document.createTextNode(fmtUnits(e.units)), el("small", { textContent: "unités" })),
+      el("div", { className: "u num" }, document.createTextNode(fmtUnits(e.units)), el("small", { textContent: "unités" }),
+        ...(e.extraUnits ? [el("small", { textContent: "+ " + fmtUnits(e.extraUnits) + " en plus" })] : [])),
       afterRow(e),
       acts);
   }
@@ -485,10 +554,10 @@
   $("btn-csv").onclick = () => {
     if (!data.entries.length) { toast("Rien à exporter pour l'instant."); return; }
     const esc = (v) => { const s = v == null ? "" : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const rows = [["Date", "Heure", "Glycémie avant (" + UNIT[data.settings.unit] + ")", "Glycémie 2 h après (" + UNIT[data.settings.unit] + ")", "Mangé / bu", "Unités", "Note"]];
+    const rows = [["Date", "Heure", "Glycémie avant (" + UNIT[data.settings.unit] + ")", "Glycémie 2 h après (" + UNIT[data.settings.unit] + ")", "Mangé / bu", "Unités", "Unités en plus", "Note"]];
     [...data.entries].sort((a, b) => a.at.localeCompare(b.at)).forEach(e => {
       const d = new Date(e.at);
-      rows.push([d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), e.gly == null ? "" : fmtGly(e.gly), e.glyAfter == null ? "" : fmtGly(e.glyAfter), e.items.map(itemLabel).join(" + "), fmtUnits(e.units), e.note]);
+      rows.push([d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), e.gly == null ? "" : fmtGly(e.gly), e.glyAfter == null ? "" : fmtGly(e.glyAfter), e.items.map(itemLabel).join(" + "), fmtUnits(e.units), e.extraUnits ? fmtUnits(e.extraUnits) : "", e.note]);
     });
     downloadFile("insulink-" + today() + ".csv", "﻿" + rows.map(r => r.map(esc).join(";")).join("\n"), "text/csv");
   };
@@ -497,7 +566,7 @@
     const yes = el("button", { type: "button", className: "btn-danger", textContent: "Oui, tout effacer" });
     const no = el("button", { type: "button", textContent: "Annuler" });
     no.onclick = () => z.replaceChildren(wipeBtn);
-    yes.onclick = () => { data.entries = []; data.custom = []; save(); PhotoIA.clear().catch(() => {}); renderAll(); z.replaceChildren(wipeBtn); toast("Toutes les données ont été effacées"); };
+    yes.onclick = () => { data.entries = []; data.custom = []; data.ongoing = null; resetForm(); save(); PhotoIA.clear().catch(() => {}); renderAll(); z.replaceChildren(wipeBtn); toast("Toutes les données ont été effacées"); };
     z.replaceChildren(el("p", { className: "notice", style: "margin:0 0 8px", textContent: "Tous vos repas seront effacés de ce téléphone. Faites d'abord une sauvegarde si vous voulez les garder." }), el("div", { className: "btn-row" }, no, yes));
   };
   const wipeBtn = $("btn-wipe");
@@ -521,6 +590,7 @@
     ["repas", "journal", "reglages"].forEach(v => ($("view-" + v).hidden = v !== view));
     document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.view === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     if (view === "journal") renderJournal();
+    if (view === "repas" && !adding) renderOngoing();
     if (view === "reglages") renderStorage();
     window.scrollTo(0, 0);
   }
